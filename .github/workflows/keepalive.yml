@@ -1,0 +1,24 @@
+name: Keepalive
+
+# Раз в месяц делает пустой коммит, чтобы GitHub не отключил
+# запуски по расписанию из-за 60 дней без активности в репозитории.
+on:
+  schedule:
+    - cron: "0 3 1 * *"   # 1-го числа каждого месяца, 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Empty commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keepalive"
+          git push
