@@ -496,6 +496,9 @@
 193.233.112.88 ai.google.dev
 193.233.112.67 ai.google.dev
 193.233.112.68 ai.google.dev
+193.233.112.88 aicode.googleapis.com
+193.233.112.67 aicode.googleapis.com
+193.233.112.68 aicode.googleapis.com
 193.233.112.88 aisandbox-pa.googleapis.com
 193.233.112.67 aisandbox-pa.googleapis.com
 193.233.112.68 aisandbox-pa.googleapis.com
@@ -826,9 +829,15 @@
 193.233.112.68 xsts.auth.xboxlive.com
 193.233.112.88 xsts.auth.xboxlive.com
 # Nvidia
+193.233.112.67 build.nvidia.com
+193.233.112.68 build.nvidia.com
+193.233.112.88 build.nvidia.com
 193.233.112.88 developer.nvidia.com
 193.233.112.67 developer.nvidia.com
 193.233.112.68 developer.nvidia.com
+193.233.112.67 ngc.nvidia.com
+193.233.112.68 ngc.nvidia.com
+193.233.112.88 ngc.nvidia.com
 # OpenCode AI
 193.233.112.68 opencode.ai
 193.233.112.67 opencode.ai
