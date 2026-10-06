@@ -1,20 +1,20 @@
-Adobe
+Adobe AI
 AMD
 Canva
 Capcut
-ChatGPT (OpenAI)
+ChatGPT (OpenAI) AI
 Chess
-Claude
+Claude AI
 Corsair
 Cursor AI
 DeepL
 Deezer
 Dyson
-ElevenLabs
+ElevenLabs AI
 Genspark AI
-Google AI
-Grok
-Groq
+Google Gemini AI
+Grok AI
+Groq AI
 Guidedhacking
 Hume AI
 Ikea
