@@ -16,6 +16,25 @@ if [ "$(wc -l < upstream.tmp)" -lt 500 ]; then
   exit 1
 fi
 
+# 0. проверка: все разделы из sections.txt должны существовать в оригинале.
+#    Если автор GeoHide переименовал раздел, лучше громко упасть (красный крестик
+#    в Actions), чем тихо выкинуть сервис из hosts-ai.txt.
+missing=0
+while IFS= read -r s || [ -n "$s" ]; do
+  s="$(printf '%s' "$s" | sed 's/[[:space:]]*$//')"
+  case "$s" in ''|\#*) continue ;; esac
+  if ! grep -qxF "# $s" upstream.tmp; then
+    echo "Раздел не найден в оригинале: $s" >&2
+    echo "  похожие заголовки:" >&2
+    grep -iF "# ${s%% *}" upstream.tmp | sed 's/^/    /' >&2 || true
+    missing=1
+  fi
+done < sections.txt
+if [ "$missing" -ne 0 ]; then
+  echo "Исправь названия в sections.txt и запусти снова" >&2
+  exit 1
+fi
+
 # 1. оставляем только нужные разделы
 awk '
   NR == FNR { sub(/[ \t]+$/, ""); if ($0 != "" && $0 !~ /^#/) want[$0] = 1; next }
