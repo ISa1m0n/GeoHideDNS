@@ -607,6 +607,9 @@
 193.233.112.67 labs.google.com
 193.233.112.88 labs.google.com
 193.233.112.68 labs.google.com
+193.233.112.68 labstailwind.pa.googleapis.com
+193.233.112.67 labstailwind.pa.googleapis.com
+193.233.112.88 labstailwind.pa.googleapis.com
 193.233.112.88 lookerstudio.google.com
 193.233.112.68 lookerstudio.google.com
 193.233.112.67 lookerstudio.google.com
