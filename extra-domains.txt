@@ -1,0 +1,4 @@
+www.spotify.com
+accounts.spotify.com
+accounts.scdn.co
+www-growth.scdn.co
