@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Скачивает свежий hosts GeoHide (RU), оставляет разделы из sections.txt,
+# добавляет отдельные домены из extra-domains.txt (из любых разделов),
 # выкидывает плохие IP из bad-ips.txt и применяет исключения из pin-ips.txt.
 # Первый IP каждого домена попадает в NextDNS Rewrites (так работает DnsConf).
 set -euo pipefail
@@ -7,7 +8,7 @@ set -euo pipefail
 SRC="https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts"
 OUT="hosts-ai.txt"
 
-touch bad-ips.txt pin-ips.txt
+touch bad-ips.txt pin-ips.txt extra-domains.txt
 
 curl -fsSL "$SRC" | tr -d '\r' > upstream.tmp
 
@@ -41,6 +42,12 @@ awk '
   /^# /     { name = substr($0, 3); sub(/[ \t]+$/, "", name); on = (name in want); if (on) print; next }
   on && NF >= 2 && $1 !~ /^#/ { print }
 ' sections.txt upstream.tmp > filtered.tmp
+
+# 1b. отдельные домены из extra-domains.txt (из любых разделов оригинала)
+awk '
+  FILENAME == ARGV[1] { sub(/[ \t\r]+$/, ""); if ($0 != "" && $0 !~ /^#/) want[$0] = 1; next }
+  NF >= 2 && $1 !~ /^#/ && ($2 in want) { print }
+' extra-domains.txt upstream.tmp >> filtered.tmp
 
 # 2. плохие IP и закреплённые IP
 awk '
