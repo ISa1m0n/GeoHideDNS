@@ -982,3 +982,15 @@
 193.233.112.67 web.archive.org
 193.233.112.88 web.archive.org
 193.233.112.68 web.archive.org
+193.233.112.88 www.spotify.com
+193.233.112.68 www.spotify.com
+193.233.112.67 www.spotify.com
+193.233.112.67 accounts.spotify.com
+193.233.112.68 accounts.spotify.com
+193.233.112.88 accounts.spotify.com
+193.233.112.88 accounts.scdn.co
+193.233.112.68 accounts.scdn.co
+193.233.112.67 accounts.scdn.co
+193.233.112.67 www-growth.scdn.co
+193.233.112.68 www-growth.scdn.co
+193.233.112.88 www-growth.scdn.co
