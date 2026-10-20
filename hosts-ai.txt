@@ -490,6 +490,21 @@
 193.233.112.68 www.genspark.ai
 193.233.112.67 www.genspark.ai
 # Google Gemini AI
+193.233.112.88 aida.googleapis.com
+193.233.112.68 aida.googleapis.com
+193.233.112.67 aida.googleapis.com
+193.233.112.67 antigravity-pa.googleapis.com
+193.233.112.68 antigravity-pa.googleapis.com
+193.233.112.88 antigravity-pa.googleapis.com
+193.233.112.67 antigravity-unleash.goog
+193.233.112.68 antigravity-unleash.goog
+193.233.112.88 antigravity-unleash.goog
+193.233.112.67 www.antigravity-unleash.goog
+193.233.112.88 www.antigravity-unleash.goog
+193.233.112.68 www.antigravity-unleash.goog
+193.233.112.68 antigravity.googleapis.com
+193.233.112.88 antigravity.googleapis.com
+193.233.112.67 antigravity.googleapis.com
 193.233.112.67 antigravity.google
 193.233.112.68 antigravity.google
 193.233.112.88 antigravity.google
