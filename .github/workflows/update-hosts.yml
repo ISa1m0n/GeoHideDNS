@@ -9,6 +9,7 @@ on:
       - sections.txt
       - pin-ips.txt
       - filter.sh
+      - extra-domains.txt
   workflow_dispatch:
 
 permissions:
