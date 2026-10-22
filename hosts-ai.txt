@@ -369,6 +369,8 @@
 45.13.237.213 api.anthropic.com
 143.20.64.192 api.anthropic.com
 31.25.239.132 api.anthropic.com
+45.13.237.213 api.claude.ai
+45.13.237.213 api.claude.com
 5.175.161.40 api.console.anthropic.com
 5.175.161.3 api.console.anthropic.com
 37.221.93.128 api.console.anthropic.com
@@ -390,6 +392,8 @@
 45.13.237.213 auth.anthropic.com
 143.20.64.192 auth.anthropic.com
 31.25.239.132 auth.anthropic.com
+45.13.237.213 claude.ai
+45.13.237.213 www.claude.ai
 45.13.237.213 claude.com
 5.175.161.3 claude.com
 5.175.161.40 claude.com
@@ -439,6 +443,9 @@
 45.13.237.213 console.anthropic.com
 31.25.239.132 console.anthropic.com
 143.20.64.192 console.anthropic.com
+45.13.237.213 downloads.claude.ai
+45.13.237.213 platform.claude.ai
+45.13.237.213 platform.claude.com
 5.175.161.40 s-cdn.anthropic.com
 5.175.161.3 s-cdn.anthropic.com
 37.221.93.128 s-cdn.anthropic.com
