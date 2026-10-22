@@ -4,3 +4,7 @@
 claude.ai 45.13.237.213
 platform.claude.com 45.13.237.213
 api.claude.com 45.13.237.213
+chatgpt.com 37.221.93.128
+openai.com 37.221.93.128
+oaistatic.com 37.221.93.128
+oaiusercontent.com 37.221.93.128
