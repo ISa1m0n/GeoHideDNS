@@ -5,7 +5,7 @@
 # Первый IP каждого домена попадает в NextDNS Rewrites (так работает DnsConf).
 set -euo pipefail
 
-SRC="https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts"
+SRC="https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/eu/hosts"
 OUT="hosts-ai.txt"
 
 touch bad-ips.txt pin-ips.txt extra-domains.txt
