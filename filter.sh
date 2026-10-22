@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Скачивает свежий hosts GeoHide (RU), оставляет разделы из sections.txt,
+# Скачивает свежий hosts GeoHide (EU), оставляет разделы из sections.txt,
 # добавляет отдельные домены из extra-domains.txt (из любых разделов),
 # выкидывает плохие IP из bad-ips.txt и применяет исключения из pin-ips.txt.
 # Первый IP каждого домена попадает в NextDNS Rewrites (так работает DnsConf).
