@@ -8,3 +8,4 @@ chatgpt.com 37.221.93.128
 openai.com 37.221.93.128
 oaistatic.com 37.221.93.128
 oaiusercontent.com 37.221.93.128
+deepl.com 37.221.93.128
