@@ -715,11 +715,7 @@
 5.175.161.40 gemini.google
 5.175.161.3 gemini.google
 45.13.237.213 gemini.google
-45.13.237.213 gemini.google.com
 37.221.93.141 gemini.google.com
-37.221.93.128 gemini.google.com
-5.175.161.3 gemini.google.com
-5.175.161.40 gemini.google.com
 45.13.237.213 geminiweb-pa.clients.google.com
 37.221.93.141 geminiweb-pa.clients.google.com
 37.221.93.128 geminiweb-pa.clients.google.com
