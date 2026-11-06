@@ -1,11 +1,11 @@
 # Формат: домен IP
 # Для этого домена и всех его поддоменов остаётся ТОЛЬКО указанный IP
 # (и игнорируется bad-ips.txt).
-claude.ai 37.221.93.128
-platform.claude.com 37.221.93.128
-api.claude.com 37.221.93.128
-chatgpt.com 37.221.93.128
-openai.com 37.221.93.128
+claude.ai 37.221.93.141
+platform.claude.com 37.221.93.141
+api.claude.com 37.221.93.141
+chatgpt.com 37.221.93.141
+openai.com 37.221.93.141
 oaistatic.com 37.221.93.128
 oaiusercontent.com 37.221.93.128
 deepl.com 37.221.93.128
