@@ -1,33 +1,44 @@
-# Фиксация на живом основном EU-сервере (62 ms)
-# Для этого домена и всех его поддоменов остаётся ТОЛЬКО указанный IP
+# Фиксация проксируемых доменов на одном живом EU-сервере GeoHide.
+# Правила:
+#  - Формат: домен IP. Закрепление действует на домен и все его поддомены,
+#    остаётся ТОЛЬКО указанный IP.
+#  - Порядок важен: сборка берёт ПЕРВУЮ подходящую строку, поэтому более
+#    конкретный домен (www.*) должен стоять ВЫШЕ общего (apex).
+#  - Основной адрес: 37.221.93.141. Если он умрёт, заменить его везде,
+#    кроме раздела "Разнос www и apex".
 
-# OpenAI / ChatGPT (сайт + авторизация + статика + файлы)
-chatgpt.com 37.221.93.141
-openai.com 37.221.93.141
-oaistatic.com 37.221.93.141
-oaiusercontent.com 37.221.93.141
+# OpenAI / ChatGPT (сайт, авторизация, статика, файлы)
+chatgpt.com                          37.221.93.141
+openai.com                           37.221.93.141
+oaistatic.com                        37.221.93.141
+oaiusercontent.com                   37.221.93.141
 
-# Anthropic / Claude (чат + API + консоль + вложения/артефакты)
-claude.ai 37.221.93.141
-claude.com 37.221.93.141
-anthropic.com 37.221.93.141
-claudeusercontent.com 37.221.93.141
+# Anthropic / Claude (чат, API, консоль, вложения и артефакты)
+claude.ai                            37.221.93.141
+claude.com                           37.221.93.141
+anthropic.com                        37.221.93.141
+claudeusercontent.com                37.221.93.141
 
-# Google AI / Gemini (веб-чат + AI Studio + прямой API)
-gemini.google.com 37.221.93.141
-aistudio.google.com 37.221.93.141
-generativelanguage.googleapis.com 37.221.93.141
+# Google AI / Gemini (веб-чат, AI Studio, прямой API)
+gemini.google.com                    37.221.93.141
+aistudio.google.com                  37.221.93.141
+generativelanguage.googleapis.com    37.221.93.141
 
 # Хаб моделей и терминальный агент
-openrouter.ai 37.221.93.141
-opencode.ai 37.221.93.141
+openrouter.ai                        37.221.93.141
+opencode.ai                          37.221.93.141
 
 # Переводчик
-deepl.com 37.221.93.141
+deepl.com                            37.221.93.141
 
 # Tailscale (только controlplane)
-controlplane.tailscale.com 37.221.93.141
+controlplane.tailscale.com           37.221.93.141
 
-# Last FM
-www.last.fm 5.175.161.40
-last.fm 37.221.93.141
+# Разнос www и apex по разным IP.
+# Если оба имени на одном IP, Firefox склеивает их в одно HTTP/2-соединение,
+# и сайт отвечает ошибкой (403 / Fastly unknown domain).
+# Строка www.* стоит выше apex, иначе она не сработает.
+www.last.fm                          5.175.161.40
+last.fm                              37.221.93.141
+www.deezer.com                       5.175.161.40
+deezer.com                           37.221.93.141
