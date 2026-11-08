@@ -2,3 +2,5 @@
 # accounts.spotify.com
 # accounts.scdn.co
 # www-growth.scdn.co
+miro.com
+www.miro.com
