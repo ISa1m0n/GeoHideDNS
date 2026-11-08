@@ -29,3 +29,4 @@ TeamViewer
 Trae.ai
 Web Archive
 Windsurf
+Tailscale
