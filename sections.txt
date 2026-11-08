@@ -19,7 +19,6 @@ Imgur
 JetBrains
 Meta AI
 Microsoft (Copilot, Designer, Xbox)
-Miro
 Notion
 Nvidia
 OpenCode AI
