@@ -24,3 +24,6 @@ opencode.ai 37.221.93.141
 
 # Переводчик
 deepl.com 37.221.93.141
+
+# Tailscale (только controlplane)
+controlplane.tailscale.com 37.221.93.141
