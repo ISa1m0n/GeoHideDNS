@@ -1,12 +1,19 @@
 # Формат: домен IP
 # Для этого домена и всех его поддоменов остаётся ТОЛЬКО указанный IP
 # (и игнорируется bad-ips.txt).
+# Фиксация на живом основном EU-сервере (62 ms)
 claude.ai 37.221.93.141
 platform.claude.com 37.221.93.141
 api.claude.com 37.221.93.141
+api.anthropic.com 37.221.93.141
 chatgpt.com 37.221.93.141
 openai.com 37.221.93.141
-oaistatic.com 37.221.93.128
-oaiusercontent.com 37.221.93.128
+api.openai.com 37.221.93.141
+oaistatic.com 37.221.93.141
+oaiusercontent.com 37.221.93.141
 deepl.com 37.221.93.141
 gemini.google.com 37.221.93.141
+aistudio.google.com 37.221.93.141
+generativelanguage.googleapis.com 37.221.93.141
+openrouter.ai 37.221.93.141
+opencode.ai 37.221.93.141
