@@ -27,3 +27,7 @@ deepl.com 37.221.93.141
 
 # Tailscale (только controlplane)
 controlplane.tailscale.com 37.221.93.141
+
+# Last FM
+www.last.fm 5.175.161.40
+last.fm 37.221.93.141
