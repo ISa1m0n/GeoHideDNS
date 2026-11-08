@@ -150,7 +150,7 @@
 37.221.93.141 write-free.www.deepl.com
 # Deezer
 37.221.93.141 deezer.com
-37.221.93.141 www.deezer.com
+5.175.161.40 www.deezer.com
 37.221.93.141 payment.deezer.com
 # ElevenLabs AI
 37.221.93.141 api.elevenlabs.io
