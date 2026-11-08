@@ -1132,3 +1132,13 @@
 37.221.93.141 windsurf.com
 143.20.64.192 windsurf.com
 31.25.239.132 windsurf.com
+5.175.161.40 miro.com
+5.175.161.3 miro.com
+37.221.93.141 miro.com
+31.25.239.132 miro.com
+143.20.64.192 miro.com
+5.175.161.3 www.miro.com
+5.175.161.40 www.miro.com
+37.221.93.141 www.miro.com
+143.20.64.192 www.miro.com
+31.25.239.132 www.miro.com
