@@ -1040,10 +1040,6 @@
 2.27.118.34 store.supercell.com
 # Tailscale
 37.221.93.141 controlplane.tailscale.com
-5.175.161.40 controlplane.tailscale.com
-5.175.161.3 controlplane.tailscale.com
-31.25.239.132 controlplane.tailscale.com
-143.20.64.192 controlplane.tailscale.com
 # TeamViewer
 5.175.161.40 download.teamviewer.com
 5.175.161.3 download.teamviewer.com
