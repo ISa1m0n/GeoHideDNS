@@ -150,7 +150,7 @@
 37.221.93.141 write-free.www.deepl.com
 # Deezer
 37.221.93.141 deezer.com
-5.175.161.40 www.deezer.com
+37.221.93.141 www.deezer.com
 37.221.93.141 payment.deezer.com
 # ElevenLabs AI
 37.221.93.141 api.elevenlabs.io
@@ -266,7 +266,7 @@
 37.221.93.141 autodiscover.last.fm
 37.221.93.141 jira.last.fm
 37.221.93.141 last.fm
-37.221.93.141 www.last.fm
+5.175.161.40 www.last.fm
 37.221.93.141 s.last.fm
 37.221.93.141 saa.last.fm
 37.221.93.141 secure.last.fm
