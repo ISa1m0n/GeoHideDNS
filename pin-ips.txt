@@ -1,11 +1,13 @@
-# Фиксация проксируемых доменов на одном живом EU-сервере GeoHide.
+# Фиксация проксируемых доменов на одном живом сервере GeoHide.
 # Правила:
 #  - Формат: домен IP. Закрепление действует на домен и все его поддомены,
 #    остаётся ТОЛЬКО указанный IP.
 #  - Порядок важен: сборка берёт ПЕРВУЮ подходящую строку, поэтому более
 #    конкретный домен (www.*) должен стоять ВЫШЕ общего (apex).
 #  - Основной адрес: 37.221.93.141. Если он умрёт, заменить его везде,
-#    кроме раздела "Разнос www и apex".
+#    кроме раздела "Google Gemini (веб-чат)" и раздела "Разнос www и apex".
+#  - Раздел "Google Gemini (веб-чат)" стоит на отдельном адресе 107.175.76.134,
+#    его меняют отдельно (см. комментарий в самом разделе).
 
 # OpenAI / ChatGPT (сайт, авторизация, статика, файлы)
 chatgpt.com                          37.221.93.141
@@ -19,8 +21,24 @@ claude.com                           37.221.93.141
 anthropic.com                        37.221.93.141
 claudeusercontent.com                37.221.93.141
 
-# Google AI / Gemini (веб-чат, AI Studio, прямой API)
-gemini.google.com                    37.221.93.141
+# Google Gemini (веб-чат).
+# С 10.11.2026 Google отдаёт /sorry для gemini.google.com на всех EU-адресах
+# GeoHide (в том числе на 37.221.93.141), поэтому домены Gemini закреплены на
+# живом US-адресе 107.175.76.134 (на нём /sorry нет, TLS ~0,3 с).
+# Если снова появится /sorry, проверить адреса curl --resolve и заменить IP
+# только в этом разделе. Адрес не добавлять в bad-ips.txt.
+gemini.google.com                    107.175.76.134
+gemini.google                        107.175.76.134
+bard.google.com                      107.175.76.134
+geminiweb-pa.clients.google.com      107.175.76.134
+geminiweb-pa.clients6.google.com     107.175.76.134
+people-pa.clients6.google.com        107.175.76.134
+waa-pa.clients6.google.com           107.175.76.134
+signaler-pa.clients6.google.com      107.175.76.134
+apis.google.com                      107.175.76.134
+suggestqueries.google.com            107.175.76.134
+
+# Google AI Studio и прямой API (остаются на основном адресе)
 aistudio.google.com                  37.221.93.141
 generativelanguage.googleapis.com    37.221.93.141
 
