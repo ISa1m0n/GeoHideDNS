@@ -10,6 +10,7 @@ on:
       - pin-ips.txt
       - filter.sh
       - extra-domains.txt
+      - us-domains.txt
   workflow_dispatch:
 
 permissions:
