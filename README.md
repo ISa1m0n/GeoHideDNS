@@ -27,7 +27,7 @@ hosts-файл с адресами сервисов, которые не отк�
 | IP | Записей | Что это |
 |---|---:|---|
 | `37.221.93.141` | 283 | основной EU-узел GeoHide |
-| `89.169.35.124` | 12 | Gemini, см. `custom-hosts.txt` |
+| `5.129.221.64` | 12 | Gemini, см. `custom-hosts.txt` |
 | `5.175.161.40` | 2 | `www.deezer.com`, `www.last.fm` |
 
 Актуальное число всегда видно в шапке последнего коммита `hosts-ai.txt`.
@@ -90,7 +90,7 @@ ip host chatgpt.com 37.221.93.141
 
 - Выбрано 30 разделов вместо всех. Убраны `Canva`, `Chess`, `Oracle`, `Supercell`:
   GeoHide их не проксирует, а обычный DNS для них лучше.
-- `custom-hosts.txt` закрепляет Gemini на `89.169.35.124` — на EU-адресах Google
+- `custom-hosts.txt` закрепляет Gemini на `5.129.221.64` — на EU-адресах Google
   отдаёт `google.com/sorry`.
 - `us-domains.txt` отключён: US-адреса GeoHide перестали отвечать.
 - Удалены служебные копии `lists/` и `hosts/*` — сборка их не использует,
