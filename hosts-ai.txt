@@ -314,15 +314,15 @@
 37.221.93.141 miro.com
 37.221.93.141 www.miro.com
 # Custom (custom-hosts.txt)
-89.169.35.124 gemini.google.com
-89.169.35.124 gemini.google
-89.169.35.124 bard.google.com
-89.169.35.124 aistudio.google.com
-89.169.35.124 alkalimakersuite-pa.clients6.google.com
-89.169.35.124 geminiweb-pa.clients.google.com
-89.169.35.124 geminiweb-pa.clients6.google.com
-89.169.35.124 people-pa.clients6.google.com
-89.169.35.124 waa-pa.clients6.google.com
-89.169.35.124 signaler-pa.clients6.google.com
-89.169.35.124 apis.google.com
-89.169.35.124 suggestqueries.google.com
+5.129.221.64 gemini.google.com
+5.129.221.64 gemini.google
+5.129.221.64 bard.google.com
+5.129.221.64 aistudio.google.com
+5.129.221.64 alkalimakersuite-pa.clients6.google.com
+5.129.221.64 geminiweb-pa.clients.google.com
+5.129.221.64 geminiweb-pa.clients6.google.com
+5.129.221.64 people-pa.clients6.google.com
+5.129.221.64 waa-pa.clients6.google.com
+5.129.221.64 signaler-pa.clients6.google.com
+5.129.221.64 apis.google.com
+5.129.221.64 suggestqueries.google.com
