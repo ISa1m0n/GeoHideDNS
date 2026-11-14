@@ -189,10 +189,8 @@
 37.221.93.141 ai.google.dev
 37.221.93.141 aicode.googleapis.com
 37.221.93.141 aisandbox-pa.googleapis.com
-37.221.93.141 aistudio.google.com
 37.221.93.141 aitestkitchen.withgoogle.com
 37.221.93.141 alkalicore-pa.clients6.google.com
-37.221.93.141 alkalimakersuite-pa.clients6.google.com
 37.221.93.141 appcatalyst.pa.googleapis.com
 37.221.93.141 assistant-s3-pa.googleapis.com
 37.221.93.141 daily-cloudcode-pa.googleapis.com
@@ -347,13 +345,16 @@
 37.221.93.141 windsurf.com
 37.221.93.141 miro.com
 37.221.93.141 www.miro.com
-107.175.76.134 apis.google.com
-107.175.76.134 bard.google.com
-107.175.76.134 gemini.google
-107.175.76.134 gemini.google.com
-107.175.76.134 geminiweb-pa.clients.google.com
-107.175.76.134 geminiweb-pa.clients6.google.com
-107.175.76.134 people-pa.clients6.google.com
-107.175.76.134 signaler-pa.clients6.google.com
-107.175.76.134 suggestqueries.google.com
-107.175.76.134 waa-pa.clients6.google.com
+# Custom (custom-hosts.txt)
+89.169.35.124 gemini.google.com
+89.169.35.124 gemini.google
+89.169.35.124 bard.google.com
+89.169.35.124 aistudio.google.com
+89.169.35.124 alkalimakersuite-pa.clients6.google.com
+89.169.35.124 geminiweb-pa.clients.google.com
+89.169.35.124 geminiweb-pa.clients6.google.com
+89.169.35.124 people-pa.clients6.google.com
+89.169.35.124 waa-pa.clients6.google.com
+89.169.35.124 signaler-pa.clients6.google.com
+89.169.35.124 apis.google.com
+89.169.35.124 suggestqueries.google.com
