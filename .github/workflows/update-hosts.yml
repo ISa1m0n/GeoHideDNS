@@ -11,6 +11,7 @@ on:
       - filter.sh
       - extra-domains.txt
       - us-domains.txt
+      - custom-hosts.txt
   workflow_dispatch:
 
 permissions:

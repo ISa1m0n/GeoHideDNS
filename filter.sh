@@ -10,7 +10,7 @@ SRC="https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/mai
 SRC_US="https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/us/hosts"
 OUT="hosts-ai.txt"
 
-touch bad-ips.txt pin-ips.txt extra-domains.txt us-domains.txt
+touch bad-ips.txt pin-ips.txt extra-domains.txt us-domains.txt custom-hosts.txt
 
 curl -fsSL "$SRC" | tr -d '\r' > upstream.tmp
 
@@ -115,11 +115,31 @@ awk '
   }
 ' bad-ips.txt pin-ips.txt filtered.tmp > "$OUT.new"
 
+# 3. Ручные закрепления из custom-hosts.txt (формат: "домен IP"), последним шагом.
+#    IP берётся как есть, без проверки по hosts GeoHide. Старые строки этих доменов
+#    в результате удаляются, вместо них в конец добавляются строки из custom-hosts.txt.
+if tr -d '\r' < custom-hosts.txt | grep -qE '^[[:space:]]*[^#[:space:]]'; then
+  awk '
+    FILENAME == ARGV[1] {
+      sub(/\r$/, "")
+      if ($0 !~ /^[ \t]*#/ && NF >= 2) { if (!($1 in want)) order[++n] = $1; want[$1] = $2 }
+      next
+    }
+    /^#/ || NF < 2 { print; next }
+    !($2 in want) { print }
+    END {
+      print "# Custom (custom-hosts.txt)"
+      for (i = 1; i <= n; i++) print want[order[i]], order[i]
+    }
+  ' custom-hosts.txt "$OUT.new" > "$OUT.custom"
+  mv "$OUT.custom" "$OUT.new"
+fi
+
 if ! grep -qE '^[0-9]' "$OUT.new"; then
   echo "Ни одной записи не осталось, проверь sections.txt" >&2
   exit 1
 fi
 
 mv "$OUT.new" "$OUT"
-rm -f upstream.tmp upstream-us.tmp filtered.tmp filtered.us.tmp
+rm -f upstream.tmp upstream-us.tmp filtered.tmp filtered.us.tmp "$OUT.custom"
 echo "Готово: $(grep -cE '^[0-9]' "$OUT") записей"

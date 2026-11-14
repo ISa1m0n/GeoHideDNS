@@ -1,0 +1,20 @@
+# Ручные закрепления: формат "домен IP". IP берётся как есть, БЕЗ проверки по hosts GeoHide
+# и применяется ПОСЛЕДНИМ шагом сборки, поэтому перекрывает EU-hosts, us-domains.txt, pin-ips.txt и bad-ips.txt.
+# Если домен уже есть в hosts-ai.txt, его строка заменяется на строку отсюда.
+# Причина: 14.11.2026 в hosts GeoHide не осталось живых адресов без /sorry для Gemini
+# (EU дают google.com/sorry, US мертвы), рабочий адрес найден через dns.dagami.ru.
+# Проверено curl --resolve: все домены OK, TLS ~0,1 с, gemini.google.com 200 без /sorry.
+# Запасной вариант: 5.129.221.64 (dns.zapret.moe), но на нём не работает www.google.com.
+# Если адрес умрёт, заменить IP во всех строках или закомментировать их (#).
+gemini.google.com                         89.169.35.124
+gemini.google                             89.169.35.124
+bard.google.com                           89.169.35.124
+aistudio.google.com                       89.169.35.124
+alkalimakersuite-pa.clients6.google.com   89.169.35.124
+geminiweb-pa.clients.google.com           89.169.35.124
+geminiweb-pa.clients6.google.com          89.169.35.124
+people-pa.clients6.google.com             89.169.35.124
+waa-pa.clients6.google.com                89.169.35.124
+signaler-pa.clients6.google.com           89.169.35.124
+apis.google.com                           89.169.35.124
+suggestqueries.google.com                 89.169.35.124

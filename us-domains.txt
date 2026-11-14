@@ -1,16 +1,17 @@
+# 14.11.2026: 107.175.76.134 мёртв (US-адреса недоступны), строки отключены. Gemini-домены теперь в custom-hosts.txt.
 # Домены, которые берутся из US-hosts GeoHide, а не из EU.
 # Формат: домен IP. Берётся только строка US-hosts с этим IP.
 # Причина: с 10.11.2026 Google отдаёт /sorry для Gemini на EU-адресах GeoHide.
 # Если IP умрёт или Google заблокирует и его, проверить адреса curl --resolve
 # и заменить IP у всех строк. Эти домены НЕ закреплять в pin-ips.txt (закрепление
 # оставит только свой IP, и US-строка пропадёт). IP не добавлять в bad-ips.txt.
-gemini.google.com                    107.175.76.134
-gemini.google                        107.175.76.134
-bard.google.com                      107.175.76.134
-geminiweb-pa.clients.google.com      107.175.76.134
-geminiweb-pa.clients6.google.com     107.175.76.134
-people-pa.clients6.google.com        107.175.76.134
-waa-pa.clients6.google.com           107.175.76.134
-signaler-pa.clients6.google.com      107.175.76.134
-apis.google.com                      107.175.76.134
-suggestqueries.google.com            107.175.76.134
+# gemini.google.com                    107.175.76.134
+# gemini.google                        107.175.76.134
+# bard.google.com                      107.175.76.134
+# geminiweb-pa.clients.google.com      107.175.76.134
+# geminiweb-pa.clients6.google.com     107.175.76.134
+# people-pa.clients6.google.com        107.175.76.134
+# waa-pa.clients6.google.com           107.175.76.134
+# signaler-pa.clients6.google.com      107.175.76.134
+# apis.google.com                      107.175.76.134
+# suggestqueries.google.com            107.175.76.134
