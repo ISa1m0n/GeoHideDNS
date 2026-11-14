@@ -1,10 +1,8 @@
 Adobe AI
 AMD
 Atlassian
-Canva
 Capcut
 ChatGPT (OpenAI) AI
-Chess
 Claude AI
 Corsair
 Cursor AI
@@ -23,8 +21,6 @@ Notion
 Nvidia
 OpenCode AI
 OpenRouter AI
-Oracle
-Supercell
 TeamViewer
 Trae.ai
 Web Archive
