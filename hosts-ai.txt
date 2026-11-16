@@ -205,7 +205,6 @@
 37.221.93.141 proactivebackend-pa.googleapis.com
 37.221.93.141 robinfrontend-pa.googleapis.com
 37.221.93.141 stitch.withgoogle.com
-37.221.93.141 webchannel-alkalimakersuite-pa.clients6.google.com
 # Grok AI
 37.221.93.141 accounts.x.ai
 37.221.93.141 api.x.ai
@@ -314,15 +313,16 @@
 37.221.93.141 miro.com
 37.221.93.141 www.miro.com
 # Custom (custom-hosts.txt)
-5.129.221.64 gemini.google.com
-5.129.221.64 gemini.google
-5.129.221.64 bard.google.com
-5.129.221.64 aistudio.google.com
-5.129.221.64 alkalimakersuite-pa.clients6.google.com
-5.129.221.64 geminiweb-pa.clients.google.com
-5.129.221.64 geminiweb-pa.clients6.google.com
-5.129.221.64 people-pa.clients6.google.com
-5.129.221.64 waa-pa.clients6.google.com
-5.129.221.64 signaler-pa.clients6.google.com
-5.129.221.64 apis.google.com
-5.129.221.64 suggestqueries.google.com
+45.86.72.85 gemini.google.com
+45.86.72.85 gemini.google
+45.86.72.85 bard.google.com
+45.86.72.85 aistudio.google.com
+45.86.72.85 alkalimakersuite-pa.clients6.google.com
+45.86.72.85 geminiweb-pa.clients.google.com
+45.86.72.85 geminiweb-pa.clients6.google.com
+45.86.72.85 people-pa.clients6.google.com
+45.86.72.85 waa-pa.clients6.google.com
+45.86.72.85 signaler-pa.clients6.google.com
+45.86.72.85 apis.google.com
+45.86.72.85 suggestqueries.google.com
+45.86.72.85 webchannel-alkalimakersuite-pa.clients6.google.com
