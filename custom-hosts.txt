@@ -1,23 +1,25 @@
 # Ручные закрепления: формат "домен IP". IP берётся как есть, БЕЗ проверки по hosts GeoHide
 # и применяется ПОСЛЕДНИМ шагом сборки, поэтому перекрывает EU-hosts, us-domains.txt, pin-ips.txt и bad-ips.txt.
 # Если домен уже есть в hosts-ai.txt, его строка заменяется на строку отсюда.
-# Причина: 14.11.2026 в hosts GeoHide не осталось живых адресов без /sorry для Gemini
-# (EU дают google.com/sorry, US мертвы).
-# Основной адрес: 5.129.221.64 (из dns.zapret.moe). Проверено 14.11.2026 curl --resolve:
-# gemini.google.com 200, aistudio.google.com 302 на /welcome, TLS ~0,5 с.
-# www.google.com на нём не работает, поэтому его сюда не добавлять.
-# Прежний адрес 89.169.35.124 (из dns.dagami.ru) вечером 14.11.2026 умер (нет TCP-соединения).
-# Если 5.129.221.64 тоже умрёт, проверить 89.169.35.124 и другие адреса curl --resolve
-# и заменить IP во всех строках или закомментировать их (#).
-gemini.google.com                         5.129.221.64
-gemini.google                             5.129.221.64
-bard.google.com                           5.129.221.64
-aistudio.google.com                       5.129.221.64
-alkalimakersuite-pa.clients6.google.com   5.129.221.64
-geminiweb-pa.clients.google.com           5.129.221.64
-geminiweb-pa.clients6.google.com          5.129.221.64
-people-pa.clients6.google.com             5.129.221.64
-waa-pa.clients6.google.com                5.129.221.64
-signaler-pa.clients6.google.com           5.129.221.64
-apis.google.com                           5.129.221.64
-suggestqueries.google.com                 5.129.221.64
+# Причина: в hosts GeoHide не осталось живых адресов без /sorry для Gemini
+# (EU дают google.com/sorry, US и RU мертвы).
+# Основной адрес: 45.86.72.85 (из dns.dagami.ru). Проверено 17.11.2026 curl --resolve по 14 доменам:
+# gemini.google.com 200, aistudio.google.com 302 на /welcome, без /sorry, TLS ~0,35-0,4 с.
+# www.google.com сюда не добавлять (раньше закрепление ломало обычный Google).
+# Прежние адреса 5.129.221.64 (dns.zapret.moe) и 89.169.35.124 (dns.dagami.ru) мертвы (conn=0) на 17.11.2026.
+# Если 45.86.72.85 тоже умрёт, взять свежий IP через
+# curl --doh-url https://dns.dagami.ru/dns-query -sv https://gemini.google.com/ (строка Trying),
+# проверить curl --resolve и заменить IP во всех строках или закомментировать их (#).
+gemini.google.com                         45.86.72.85
+gemini.google                             45.86.72.85
+bard.google.com                           45.86.72.85
+aistudio.google.com                       45.86.72.85
+alkalimakersuite-pa.clients6.google.com   45.86.72.85
+geminiweb-pa.clients.google.com           45.86.72.85
+geminiweb-pa.clients6.google.com          45.86.72.85
+people-pa.clients6.google.com             45.86.72.85
+waa-pa.clients6.google.com                45.86.72.85
+signaler-pa.clients6.google.com           45.86.72.85
+apis.google.com                           45.86.72.85
+suggestqueries.google.com                 45.86.72.85
+webchannel-alkalimakersuite-pa.clients6.google.com  45.86.72.85
