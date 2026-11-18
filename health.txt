@@ -1,6 +1,6 @@
 # Пишется tools/geohide-probe.ps1 с ПК пользователя (проверка с его провайдера).
-# checked 2026-11-18T02:43:43Z
-# gemini: ai-only
-MAIN 5.175.161.40 94
-ALT 5.175.161.3 96
+# checked 2026-11-18T18:45:13Z
+# gemini: clean
+MAIN 37.221.93.128 112
+ALT 5.175.161.3 190
 GEMINI 45.86.72.85
