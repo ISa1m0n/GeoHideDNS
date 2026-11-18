@@ -3,23 +3,23 @@
 # Если домен уже есть в hosts-ai.txt, его строка заменяется на строку отсюда.
 # Причина: в hosts GeoHide не осталось живых адресов без /sorry для Gemini
 # (EU дают google.com/sorry, US и RU мертвы).
-# Основной адрес: 45.86.72.85 (из dns.dagami.ru). Проверено 17.11.2026 curl --resolve по 14 доменам:
+# Адрес @GEMINI задаёт health.txt (пишет tools/geohide-probe.ps1) или defaults.txt; прежний 45.86.72.85 (из dns.dagami.ru). Проверено 17.11.2026 curl --resolve по 14 доменам:
 # gemini.google.com 200, aistudio.google.com 302 на /welcome, без /sorry, TLS ~0,35-0,4 с.
 # www.google.com сюда не добавлять (раньше закрепление ломало обычный Google).
 # Прежние адреса 5.129.221.64 (dns.zapret.moe) и 89.169.35.124 (dns.dagami.ru) мертвы (conn=0) на 17.11.2026.
 # Если 45.86.72.85 тоже умрёт, взять свежий IP через
 # curl --doh-url https://dns.dagami.ru/dns-query -sv https://gemini.google.com/ (строка Trying),
 # проверить curl --resolve и заменить IP во всех строках или закомментировать их (#).
-gemini.google.com                         45.86.72.85
-gemini.google                             45.86.72.85
-bard.google.com                           45.86.72.85
-aistudio.google.com                       45.86.72.85
-alkalimakersuite-pa.clients6.google.com   45.86.72.85
-geminiweb-pa.clients.google.com           45.86.72.85
-geminiweb-pa.clients6.google.com          45.86.72.85
-people-pa.clients6.google.com             45.86.72.85
-waa-pa.clients6.google.com                45.86.72.85
-signaler-pa.clients6.google.com           45.86.72.85
-apis.google.com                           45.86.72.85
-suggestqueries.google.com                 45.86.72.85
-webchannel-alkalimakersuite-pa.clients6.google.com  45.86.72.85
+gemini.google.com                         @GEMINI
+gemini.google                             @GEMINI
+bard.google.com                           @GEMINI
+aistudio.google.com                       @GEMINI
+alkalimakersuite-pa.clients6.google.com   @GEMINI
+geminiweb-pa.clients.google.com           @GEMINI
+geminiweb-pa.clients6.google.com          @GEMINI
+people-pa.clients6.google.com             @GEMINI
+waa-pa.clients6.google.com                @GEMINI
+signaler-pa.clients6.google.com           @GEMINI
+apis.google.com                           @GEMINI
+suggestqueries.google.com                 @GEMINI
+webchannel-alkalimakersuite-pa.clients6.google.com  @GEMINI

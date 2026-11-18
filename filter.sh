@@ -96,6 +96,43 @@ if tr -d '\r' < us-domains.txt | grep -qE '^[[:space:]]*[^#[:space:]]'; then
   ' us-domains.txt upstream-us.tmp >> filtered.tmp
 fi
 
+# 1d. Живые адреса. defaults.txt задаёт значения по умолчанию, health.txt (его пишет
+#     tools/geohide-probe.ps1 с ПК пользователя, проверка идёт с его провайдера) их
+#     перекрывает. Ключи: MAIN (основной EU-адрес), ALT (второй EU-адрес для разноса
+#     www и apex), GEMINI (адрес для Gemini и AI Studio из custom-hosts.txt).
+MAIN=""; ALT=""; GEMINI=""
+for f in defaults.txt health.txt; do
+  [ -f "$f" ] || continue
+  while read -r key val _ || [ -n "${key:-}" ]; do
+    case "${key:-}" in
+      MAIN)   MAIN="${val:-}" ;;
+      ALT)    ALT="${val:-}" ;;
+      GEMINI) GEMINI="${val:-}" ;;
+    esac
+  done < <(tr -d '\r' < "$f")
+done
+IPRE='^[0-9]{1,3}(\.[0-9]{1,3}){3}$'
+if ! [[ "$MAIN" =~ $IPRE ]]; then echo "MAIN не задан или не IP: '$MAIN'" >&2; exit 1; fi
+if ! [[ "$ALT" =~ $IPRE ]]; then ALT="$MAIN"; fi
+if ! [[ "$GEMINI" =~ $IPRE ]]; then GEMINI=""; fi
+
+# "ядро" прокси: IP, которые стоят почти у каждого домена EU-hosts
+awk '$1 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ { c[$1]++ } END { for (i in c) if (c[i] >= 500) print i }' upstream.tmp > core-ips.tmp
+if ! grep -qxF "$MAIN" core-ips.tmp; then
+  echo "MAIN $MAIN не найден среди основных IP EU-hosts: $(tr '\n' ' ' < core-ips.tmp)" >&2
+  exit 1
+fi
+# плохие IP: bad-ips.txt + всё ядро, кроме MAIN (так все домены идут на один живой адрес)
+{ tr -d '\r' < bad-ips.txt | sed 's/[[:space:]]*$//' | grep -vE '^(#|$)' || true; cat core-ips.tmp; } \
+  | sort -u | grep -vxF "$MAIN" > bad.tmp
+sed -e "s/@MAIN/$MAIN/g" -e "s/@ALT/$ALT/g" pin-ips.txt > pin.tmp
+if [ -n "$GEMINI" ]; then
+  sed "s/@GEMINI/$GEMINI/g" custom-hosts.txt > custom.tmp
+else
+  grep -v '@GEMINI' custom-hosts.txt > custom.tmp || true
+fi
+echo "Адреса: MAIN=$MAIN ALT=$ALT GEMINI=${GEMINI:-нет}"
+
 # 2. плохие IP и закреплённые IP
 awk '
   FILENAME == ARGV[1] { sub(/[ \t\r]+$/, ""); if ($0 != "" && $0 !~ /^#/) bad[$0] = 1; next }
@@ -113,12 +150,12 @@ awk '
     }
     if (!pinned && !(ip in bad)) print
   }
-' bad-ips.txt pin-ips.txt filtered.tmp > "$OUT.new"
+' bad.tmp pin.tmp filtered.tmp > "$OUT.new"
 
 # 3. Ручные закрепления из custom-hosts.txt (формат: "домен IP"), последним шагом.
 #    IP берётся как есть, без проверки по hosts GeoHide. Старые строки этих доменов
 #    в результате удаляются, вместо них в конец добавляются строки из custom-hosts.txt.
-if tr -d '\r' < custom-hosts.txt | grep -qE '^[[:space:]]*[^#[:space:]]'; then
+if tr -d '\r' < custom.tmp | grep -qE '^[[:space:]]*[^#[:space:]]'; then
   awk '
     FILENAME == ARGV[1] {
       sub(/\r$/, "")
@@ -131,7 +168,7 @@ if tr -d '\r' < custom-hosts.txt | grep -qE '^[[:space:]]*[^#[:space:]]'; then
       print "# Custom (custom-hosts.txt)"
       for (i = 1; i <= n; i++) print want[order[i]], order[i]
     }
-  ' custom-hosts.txt "$OUT.new" > "$OUT.custom"
+  ' custom.tmp "$OUT.new" > "$OUT.custom"
   mv "$OUT.custom" "$OUT.new"
 fi
 
@@ -141,5 +178,5 @@ if ! grep -qE '^[0-9]' "$OUT.new"; then
 fi
 
 mv "$OUT.new" "$OUT"
-rm -f upstream.tmp upstream-us.tmp filtered.tmp filtered.us.tmp "$OUT.custom"
+rm -f upstream.tmp upstream-us.tmp filtered.tmp filtered.us.tmp "$OUT.custom" core-ips.tmp bad.tmp pin.tmp custom.tmp
 echo "Готово: $(grep -cE '^[0-9]' "$OUT") записей"

@@ -1,0 +1,7 @@
+# Значения по умолчанию. Их перекрывает health.txt, который пишет tools/geohide-probe.ps1.
+# MAIN   основной EU-адрес для всех проксируемых доменов (должен быть среди IP EU-hosts GeoHide)
+# ALT    второй EU-адрес: apex last.fm и deezer.com, чтобы Firefox не склеивал их с www в одно HTTP/2-соединение
+# GEMINI адрес для Gemini и AI Studio (custom-hosts.txt, строки с @GEMINI)
+MAIN 5.175.161.40
+ALT 5.175.161.3
+GEMINI 45.86.72.85

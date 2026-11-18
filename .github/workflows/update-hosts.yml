@@ -12,6 +12,8 @@ on:
       - extra-domains.txt
       - us-domains.txt
       - custom-hosts.txt
+      - health.txt
+      - defaults.txt
   workflow_dispatch:
 
 permissions:

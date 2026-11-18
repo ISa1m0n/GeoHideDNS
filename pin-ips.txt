@@ -7,42 +7,42 @@
 #    Домены с US-адресом (Gemini) здесь не закрепляются, они в custom-hosts.txt (us-domains.txt для адресов вне US-hosts не годится).
 #  - Порядок важен: сборка берёт ПЕРВУЮ подходящую строку, поэтому более
 #    конкретный домен (www.*) должен стоять ВЫШЕ общего (apex).
-#  - Основной адрес: 5.175.161.40 (с 18.11.2026; 37.221.93.141 мёртв). Если он умрёт, заменить его везде,
-#    кроме раздела "Разнос www и apex".
+#  - Адреса задаёт сборка: @MAIN и @ALT берутся из health.txt (пишет tools/geohide-probe.ps1) или из defaults.txt.
+#    @MAIN: основной живой EU-адрес. @ALT: второй, только для apex в разделе "Разнос www и apex".
 
 # OpenAI / ChatGPT (сайт, авторизация, статика, файлы)
-chatgpt.com                          5.175.161.40
-openai.com                           5.175.161.40
-oaistatic.com                        5.175.161.40
-oaiusercontent.com                   5.175.161.40
+chatgpt.com                          @MAIN
+openai.com                           @MAIN
+oaistatic.com                        @MAIN
+oaiusercontent.com                   @MAIN
 
 # Anthropic / Claude (чат, API, консоль, вложения и артефакты)
-claude.ai                            5.175.161.40
-claude.com                           5.175.161.40
-anthropic.com                        5.175.161.40
-claudeusercontent.com                5.175.161.40
+claude.ai                            @MAIN
+claude.com                           @MAIN
+anthropic.com                        @MAIN
+claudeusercontent.com                @MAIN
 
 # Google AI Studio и прямой API.
 # Веб-чат Gemini (gemini.google.com и связанные домены) берётся из US-hosts,
 # см. us-domains.txt, и здесь не закрепляется.
-aistudio.google.com                  5.175.161.40
-generativelanguage.googleapis.com    5.175.161.40
+aistudio.google.com                  @MAIN
+generativelanguage.googleapis.com    @MAIN
 
 # Хаб моделей и терминальный агент
-openrouter.ai                        5.175.161.40
-opencode.ai                          5.175.161.40
+openrouter.ai                        @MAIN
+opencode.ai                          @MAIN
 
 # Переводчик
-deepl.com                            5.175.161.40
+deepl.com                            @MAIN
 
 # Tailscale (только controlplane)
-controlplane.tailscale.com           5.175.161.40
+controlplane.tailscale.com           @MAIN
 
 # Разнос www и apex по разным IP.
 # Если оба имени на одном IP, Firefox склеивает их в одно HTTP/2-соединение,
 # и сайт отвечает ошибкой (403 / Fastly unknown domain).
 # Строка www.* стоит выше apex, иначе она не сработает.
-www.last.fm                          5.175.161.40
-last.fm                              5.175.161.3
-www.deezer.com                       5.175.161.40
-deezer.com                           5.175.161.3
+www.last.fm                          @MAIN
+last.fm                              @ALT
+www.deezer.com                       @MAIN
+deezer.com                           @ALT
