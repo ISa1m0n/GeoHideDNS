@@ -23,15 +23,51 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build filtered hosts
         run: bash filter.sh
+
+      - name: Sanity check
+        run: |
+          entries=$(grep -cE '^[0-9]' hosts-ai.txt)
+          echo "Записей: $entries"
+          src=defaults.txt
+          if [ -f health.txt ]; then src=health.txt; fi
+          main=$(awk '/^MAIN/ {print $2}' "$src" | head -n1)
+          alt=$(awk '/^ALT/ {print $2}' "$src" | head -n1)
+          gem=$(awk '/^GEMINI/ {print $2}' "$src" | head -n1)
+          echo "MAIN=$main ALT=$alt GEMINI=$gem"
+          # резервный адрес должен присутствовать, иначе разнос www и apex пропал
+          if [ -n "$alt" ] && ! awk '/^[0-9]/ {print $1}' hosts-ai.txt | grep -qxF "$alt"; then
+            echo "ALT $alt не попал в hosts-ai.txt" >&2
+            exit 1
+          fi
+          # мягкая проверка: отвечает ли главный адрес с раннера. Блокировки РКН
+          # тут не видно (раннер в США), поэтому провал не валит сборку.
+          code=$(curl -s -m 10 -o /dev/null -w '%{http_code}' --resolve "claude.ai:443:$main" https://claude.ai || echo 000)
+          echo "claude.ai через $main -> $code"
+          if [ "$code" = "000" ]; then
+            echo "::warning::Главный адрес $main не отвечает с раннера, проверь его с ПК"
+          fi
 
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add hosts-ai.txt
-          git diff --cached --quiet || git commit -m "Update hosts-ai.txt"
-          git push
+          if git diff --cached --quiet; then
+            echo "hosts-ai.txt не изменился"
+            exit 0
+          fi
+          git commit -m "Update hosts-ai.txt"
+          # скрипт с ПК может одновременно коммитить health.txt, поэтому push с повторами
+          for i in 1 2 3; do
+            if git pull --rebase --autostash origin main && git push; then
+              exit 0
+            fi
+            echo "push не прошёл, повтор $i"
+            sleep 5
+          done
+          echo "Не удалось запушить hosts-ai.txt" >&2
+          exit 1
