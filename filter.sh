@@ -172,8 +172,18 @@ if tr -d '\r' < custom.tmp | grep -qE '^[[:space:]]*[^#[:space:]]'; then
   mv "$OUT.custom" "$OUT.new"
 fi
 
-if ! grep -qE '^[0-9]' "$OUT.new"; then
-  echo "Ни одной записи не осталось, проверь sections.txt" >&2
+# 4. Защита от массовой потери записей: сломанный апстрим или неудачная правка
+#    sections.txt не должны превращать живой список в огрызок. Старый hosts-ai.txt
+#    в этом случае остаётся, DnsConf продолжает работать по нему.
+new=$(grep -cE '^[0-9]' "$OUT.new" || true)
+prev=$(grep -cE '^[0-9]' "$OUT" 2>/dev/null || true)
+if [ "$new" -lt 200 ]; then
+  echo "Собралось всего $new записей (ожидается больше 200), сборку не применяю" >&2
+  exit 1
+fi
+if [ "${prev:-0}" -ge 200 ] && [ "$new" -lt $((prev * 8 / 10)) ]; then
+  echo "Записей стало $new против $prev - потеря больше 20%, сборку не применяю" >&2
+  echo "Если так и задумано, удали hosts-ai.txt и запусти снова" >&2
   exit 1
 fi
 
