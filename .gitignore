@@ -1,3 +1,4 @@
 geohide-probe.token
+geohide-probe.state
 *.log
 *.tmp
