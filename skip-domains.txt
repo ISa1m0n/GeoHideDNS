@@ -1,0 +1,9 @@
+# Домены, которые выкидываются из hosts-ai.txt, хотя их нет в bad-ips.txt.
+# Сюда попадает то, что бесполезно писать в rewrites: NextDNS всё равно отдаёт
+# для них «Filtered» из списка рекламы (переменная BLOCK), а блокировка сильнее
+# rewrite. Правило действует на домен и все его поддомены, формат: домен.
+#
+# gtm.deepl.com и windsurf-telemetry.codeium.com блокирует hagezi-multi-normal:
+# это аналитика DeepL и телеметрия Windsurf, на работу приложений не влияют.
+gtm.deepl.com
+windsurf-telemetry.codeium.com

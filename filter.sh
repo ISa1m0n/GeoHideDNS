@@ -10,7 +10,7 @@ SRC="https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/mai
 SRC_US="https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/us/hosts"
 OUT="hosts-ai.txt"
 
-touch bad-ips.txt pin-ips.txt extra-domains.txt us-domains.txt custom-hosts.txt
+touch bad-ips.txt pin-ips.txt extra-domains.txt us-domains.txt custom-hosts.txt skip-domains.txt
 
 curl -fsSL "$SRC" | tr -d '\r' > upstream.tmp
 
@@ -94,6 +94,29 @@ if tr -d '\r' < us-domains.txt | grep -qE '^[[:space:]]*[^#[:space:]]'; then
     FILENAME == ARGV[1] { sub(/\r$/, ""); if ($0 !~ /^[ \t]*#/ && NF >= 2) want[$1] = $2; next }
     NF >= 2 && $1 !~ /^#/ && ($2 in want) && $1 == want[$2] && !seen[$2]++ { print }
   ' us-domains.txt upstream-us.tmp >> filtered.tmp
+fi
+
+# 1e. Домены, которые всё равно блокирует список рекламы (переменная BLOCK у DnsConf).
+#     NextDNS отвечает для них «Filtered», rewrite до них не доходит, поэтому держать
+#     их в списке бессмысленно: они только путают сверку. Формат: домен, действует
+#     и на поддомены.
+if tr -d '\r' < skip-domains.txt | grep -qE '^[[:space:]]*[^#[:space:]]'; then
+  awk '
+    FILENAME == ARGV[1] {
+      sub(/\r$/, ""); sub(/[[:space:]]*#.*$/, "")
+      if ($0 != "" && $0 !~ /^[[:space:]]*#/) { gsub(/^[[:space:]]+|[[:space:]]+$/, ""); skip[$0] = 1 }
+      next
+    }
+    /^#/ || NF < 2 { print; next }
+    {
+      dom = $2; drop = 0
+      for (s in skip) {
+        if (dom == s || (length(dom) > length(s) && substr(dom, length(dom) - length(s)) == "." s)) { drop = 1; break }
+      }
+      if (!drop) print
+    }
+  ' skip-domains.txt filtered.tmp > filtered.skip.tmp
+  mv filtered.skip.tmp filtered.tmp
 fi
 
 # 1d. Живые адреса. defaults.txt задаёт значения по умолчанию, health.txt (его пишет
@@ -188,5 +211,5 @@ if [ "${prev:-0}" -ge 200 ] && [ "$new" -lt $((prev * 8 / 10)) ]; then
 fi
 
 mv "$OUT.new" "$OUT"
-rm -f upstream.tmp upstream-us.tmp filtered.tmp filtered.us.tmp "$OUT.custom" core-ips.tmp bad.tmp pin.tmp custom.tmp
+rm -f upstream.tmp upstream-us.tmp filtered.tmp filtered.us.tmp filtered.skip.tmp "$OUT.custom" core-ips.tmp bad.tmp pin.tmp custom.tmp
 echo "Готово: $(grep -cE '^[0-9]' "$OUT") записей"
