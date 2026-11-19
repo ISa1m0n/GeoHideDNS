@@ -70,6 +70,7 @@ hosts-файл с адресами сервисов, которые не отк�
 | `defaults.txt` | адреса по умолчанию (`MAIN`, `ALT`, `GEMINI`) |
 | `health.txt` | **живые адреса**, пишет проверка с ПК, перекрывает `defaults.txt` |
 | `tools/geohide-probe.ps1` | проверка адресов с ПК по расписанию, коммитит `health.txt` |
+| `tools/run-probe-hidden.vbs` | запускает проверку без окна консоли (действие задачи Планировщика) |
 | `filter.sh` | сам сборщик |
 | `.github/workflows/` | расписание, пересборка по push, keepalive |
 
@@ -137,8 +138,12 @@ Gemini лёг) в трее появляется уведомление, не ч�
 1. Склонировать репозиторий (например, `D:\OpenCode\GeoHideDNS`).
 2. Положить рядом со скриптом токен: `tools\geohide-probe.token` - fine-grained,
    репозитории `ISa1m0n/GeoHideDNS` и `ISa1m0n/DnsConf`, право Contents: Read and write.
-3. Задача в Планировщике: `powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "D:\OpenCode\GeoHideDNS\tools\geohide-probe.ps1"`,
-   повтор каждые 30 минут, от имени текущего пользователя.
+3. Задача в Планировщике: `wscript.exe "D:\OpenCode\GeoHideDNS\tools\run-probe-hidden.vbs"`,
+   повтор каждые 30 минут, от имени текущего пользователя. Запускать `powershell.exe`
+   напрямую нельзя: `-WindowStyle Hidden` прячет консоль уже после её создания, окно
+   успевает мигнуть и снимает с фокуса игру в полноэкранном режиме. `wscript.exe` -
+   GUI-приложение, консоль не создаётся вовсе; сам VBS стартует PowerShell скрытым
+   и ждёт его завершения, чтобы Планировщик видел реальный статус задачи.
 4. Проверить вручную: `powershell -File tools\geohide-probe.ps1 -DryRun` - покажет
    выбранные адреса и ничего не закоммитит.
 
