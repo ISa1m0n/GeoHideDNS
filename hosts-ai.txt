@@ -118,7 +118,6 @@
 37.221.93.128 errortracking.deepl.com
 37.221.93.128 experimentation-grpc.deepl.com
 37.221.93.128 experimentation.deepl.com
-37.221.93.128 gtm.deepl.com
 37.221.93.128 home.deepl.com
 37.221.93.128 hs.deepl.com
 37.221.93.128 internal.deepl.com
@@ -308,7 +307,6 @@
 37.221.93.128 unleash.codeium.com
 37.221.93.128 web-backend.codeium.com
 37.221.93.128 windsurf-stable.codeium.com
-37.221.93.128 windsurf-telemetry.codeium.com
 37.221.93.128 windsurf.com
 37.221.93.128 miro.com
 37.221.93.128 www.miro.com
