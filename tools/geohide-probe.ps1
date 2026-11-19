@@ -243,10 +243,33 @@ try {
   exit 1
 }
 
-# локальную копию не трогаем: файл приедет обычным git pull, иначе клон
-# расходится по переводам строк и мешает rebase
+# --- 4. ждём, пока бот пересоберёт hosts-ai.txt ---
+# Диспатч сразу после коммита health.txt срабатывал раньше пересборки: DnsConf
+# успевал прочитать старый hosts-ai.txt и накатить прежние адреса. Поэтому
+# дожидаемся, пока в файле появятся новые значения (Contents API не кэшируется).
+$needMain = ($main -ne $cur.MAIN)
+$needAlt  = ($alt -ne $cur.ALT)
+$needGem  = ($gemini -ne $cur.GEMINI)
+if ($needMain -or $needAlt -or $needGem) {
+  $deadline = (Get-Date).AddMinutes(4)
+  $ready = $false
+  while ((Get-Date) -lt $deadline) {
+    Start-Sleep -Seconds 10
+    try {
+      $h2 = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/contents/hosts-ai.txt?ref=$Branch" -Headers $Headers -ErrorAction Stop
+      $ht = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($h2.content -replace '\s', '')))
+      $ok = $true
+      if ($needMain) { $ok = $ok -and ([regex]::Matches($ht, "(?m)^$([regex]::Escape($main))\s")).Count -ge 200 }
+      if ($needAlt)  { $ok = $ok -and ($ht -match "(?m)^$([regex]::Escape($alt))\s+last\.fm\s*$") }
+      if ($needGem)  { $ok = $ok -and ($ht -match "(?m)^$([regex]::Escape($gemini))\s+gemini\.google\.com\s*$") }
+      if ($ok) { $ready = $true; break }
+    } catch {}
+  }
+  if ($ready) { Log 'hosts-ai.txt пересобран с новыми адресами' }
+  else { Log 'Пересборка не успела за 4 минуты, запускаю DnsConf на том, что есть' }
+}
 
-# --- 4. сразу запускаем DnsConf, чтобы NextDNS обновился без ожидания крона ---
+# --- 5. запускаем DnsConf, чтобы NextDNS обновился без ожидания крона ---
 if (-not $DryRun) {
   $d = @{ event_type = 'geohide-updated'; client_payload = @{ main = $main; alt = $alt; gemini = $gemini; gemini_state = $geminiState } }
   try {
