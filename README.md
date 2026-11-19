@@ -5,6 +5,8 @@
 **Компактный hosts-список AI- и dev-сервисов, собранный из публичного GeoHide.**
 
 [![Update filtered GeoHide hosts](https://github.com/ISa1m0n/GeoHideDNS/actions/workflows/update-hosts.yml/badge.svg?branch=main)](https://github.com/ISa1m0n/GeoHideDNS/actions/workflows/update-hosts.yml)
+[![Last commit](https://img.shields.io/github/last-commit/ISa1m0n/GeoHideDNS/main?label=hosts-ai.txt%20updated)](https://github.com/ISa1m0n/GeoHideDNS/commits/main/hosts-ai.txt)
+[![Records](https://img.shields.io/github/repo-size/ISa1m0n/GeoHideDNS?label=records&color=informational)](https://github.com/ISa1m0n/GeoHideDNS/blob/main/hosts-ai.txt)
 
 </div>
 
@@ -12,26 +14,26 @@
 
 ## Что это
 
-[GeoHide](https://github.com/Internet-Helper/GeoHideDNS) - публичный Smart DNS: он отдаёт
-hosts-файл с адресами сервисов, которые не открываются напрямую. Файл большой - сотни
+[GeoHide](https://github.com/Internet-Helper/GeoHideDNS) — публичный Smart DNS: он отдаёт
+hosts-файл с адресами сервисов, которые не открываются напрямую. Файл большой — сотни
 доменов, часть которых не нужна, часть уже мертва.
 
-Этот форк собирает из него **свой список** - `hosts-ai.txt`: только нужные разделы,
+Этот форк собирает из него **свой список** — `hosts-ai.txt`: только нужные разделы,
 только рабочие адреса, плюс ручные закрепления. Пересобирается раз в сутки, после каждого
 изменения конфигов и сразу после того, как проверка с ПК переписала `health.txt`.
 
 ## Что получается
 
-Примерно 297 записей в 31 разделе, три адреса:
+~295 записей в 30 разделах, три адреса:
 
-| Адрес | Что это |
+| Адрес | Роль |
 |---|---|
 | `MAIN` | основной EU-узел, на него идут почти все домены |
 | `ALT` | второй EU-узел, только для apex `last.fm` и `deezer.com` (разнос www и apex) |
 | `GEMINI` | адрес для Gemini и AI Studio, вне hosts GeoHide |
 
 Конкретные IP живут в `health.txt` (их пишет проверка с ПК) или в `defaults.txt`.
-Фактическое число записей всегда видно в шапке последнего коммита `hosts-ai.txt`.
+Актуальное число записей видно в бейдже выше и в шапке последнего коммита `hosts-ai.txt`.
 Домены, которых нет в списке, идут через обычный DNS.
 
 ## Как работает сборка
@@ -102,12 +104,14 @@ ip host chatgpt.com 5.175.161.40
 
 ## Что изменено относительно апстрима
 
-- Выбрано 30 разделов вместо всех. Убраны `Canva`, `Chess`, `Oracle`, `Supercell`:
-  GeoHide их не проксирует, а обычный DNS для них лучше.
+- Выбрано 30 разделов из ~50 в апстриме. Убраны `Canva`, `Chess`, `Oracle`, `Supercell`
+  и др.: GeoHide их не проксирует, а обычный DNS для них лучше.
 - `custom-hosts.txt` закрепляет Gemini и AI Studio на адресе `@GEMINI`. В hosts GeoHide
   живых адресов без `google.com/sorry` не осталось.
 - `us-domains.txt` отключён: US-адреса GeoHide перестали отвечать.
-- Удалены служебные копии `lists/` и `hosts/*` - сборка их не использует,
+- Добавлен `skip-domains.txt` — домены, которых незачем включать (их блокирует
+  список рекламы NextDNS, rewrite до них не доходит).
+- Удалены служебные копии `lists/` и `hosts/*` — сборка их не использует,
   всё качается из апстрима.
 
 ## Автопроверка адресов
@@ -132,6 +136,10 @@ Gemini лёг) в трее появляется уведомление, не ч�
 
 Статус Gemini пишется комментарием в `health.txt`: `clean` (чат работает),
 `ai-only` (чат отдаёт `/sorry`, живой только AI Studio), `dead` (не отвечает ничего).
+
+> [!NOTE]
+> Готовый `hosts-ai.txt` всегда доступен по прямой ссылке:
+> `https://raw.githubusercontent.com/ISa1m0n/GeoHideDNS/main/hosts-ai.txt`
 
 ### Установка проверки на ПК
 
