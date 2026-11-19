@@ -28,7 +28,6 @@ $Branch       = 'main'
 $TokenFile    = Join-Path $PSScriptRoot 'geohide-probe.token'
 $LogFile      = Join-Path $PSScriptRoot 'geohide-probe.log'
 $StateFile    = Join-Path $PSScriptRoot 'geohide-probe.state'
-$HealthFile   = Join-Path (Split-Path $PSScriptRoot -Parent) 'health.txt'
 $EuHosts      = 'https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/eu/hosts'
 $TestDomains  = 'claude.ai', 'chatgpt.com', 'platform.claude.com'
 # DoH-сервисы: у кого-то из них может появиться чистый адрес Gemini.
@@ -244,8 +243,8 @@ try {
   exit 1
 }
 
-# локальная копия в клоне, чтобы он не расходился с форком
-try { [IO.File]::WriteAllText($HealthFile, $text, (New-Object System.Text.UTF8Encoding($false))) } catch {}
+# локальную копию не трогаем: файл приедет обычным git pull, иначе клон
+# расходится по переводам строк и мешает rebase
 
 # --- 4. сразу запускаем DnsConf, чтобы NextDNS обновился без ожидания крона ---
 if (-not $DryRun) {
