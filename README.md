@@ -6,7 +6,6 @@
 
 [![Update filtered GeoHide hosts](https://github.com/ISa1m0n/GeoHideDNS/actions/workflows/update-hosts.yml/badge.svg?branch=main)](https://github.com/ISa1m0n/GeoHideDNS/actions/workflows/update-hosts.yml)
 [![Last commit](https://img.shields.io/github/last-commit/ISa1m0n/GeoHideDNS/main?label=hosts-ai.txt%20updated)](https://github.com/ISa1m0n/GeoHideDNS/commits/main/hosts-ai.txt)
-[![Records](https://img.shields.io/github/repo-size/ISa1m0n/GeoHideDNS?label=records&color=informational)](https://github.com/ISa1m0n/GeoHideDNS/blob/main/hosts-ai.txt)
 
 </div>
 
