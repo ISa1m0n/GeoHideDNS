@@ -3,10 +3,15 @@
  Раннер GitHub в США не видит блокировок РКН, поэтому живость адресов проверяется здесь.
 
  Что делает:
-  1. Берёт "ядро" EU-адресов GeoHide (IP, которые стоят почти у каждого домена EU-hosts).
-  2. Для каждого проверяет TLS до claude.ai, chatgpt.com и platform.claude.com (curl --resolve).
-  3. Выбирает MAIN (самый быстрый живой) и ALT (второй), а для Gemini ищет адрес без /sorry.
-     Статус Gemini пишется комментарием в health.txt: clean / ai-only / dead.
+  1. Полная проверка (раз в 3 часа): берёт "ядро" EU-адресов GeoHide (IP, которые стоят
+     почти у каждого домена EU-hosts) и проверяет TLS до claude.ai, chatgpt.com и
+     platform.claude.com, выбирает MAIN (самый быстрый живой) и ALT (второй).
+     Если все EU-адреса молчат, берёт адреса из сторонних DoH (doh-servers.txt).
+  2. Между полными проверками (запуск каждый час) только пингует текущие MAIN и ALT
+     и при их смерти запускает полную проверку. Полсотни TLS-запросов каждый час не нужны.
+  3. Для Gemini ищет адрес без google.com/sorry: сначала среди DoH-ответов, потом среди
+     проверенных адресов. Статус Gemini пишется комментарием в health.txt:
+     clean / ai-only / dead.
   4. Если MAIN/ALT/GEMINI отличаются от health.txt в форке, коммитит новый health.txt через
      GitHub API. Коммит запускает пересборку hosts-ai.txt, а сразу после коммита скрипт
      отправляет repository_dispatch в DnsConf, чтобы NextDNS обновился без ожидания крона.
@@ -30,14 +35,18 @@ $LogFile      = Join-Path $PSScriptRoot 'geohide-probe.log'
 $StateFile    = Join-Path $PSScriptRoot 'geohide-probe.state'
 $EuHosts      = 'https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/eu/hosts'
 $TestDomains  = 'claude.ai', 'chatgpt.com', 'platform.claude.com'
-# DoH-сервисы: у кого-то из них может появиться чистый адрес Gemini.
-# Список можно дополнять; недоступные серверы просто пропускаются.
-$DohServers   = @(
-  'https://dns.dagami.ru/dns-query',
-  'https://dns.zapret.moe/dns-query',
-  'https://dns.bezmezhau.com/dns-query'
-)
+# Сторонние DoH-резолверы: адреса для Gemini и запасной пул, если GeoHide замолчит.
+# Список лежит в doh-servers.txt, чтобы добавлять сервисы без правки кода.
+$DohFile      = Join-Path $PSScriptRoot 'doh-servers.txt'
+$DohServers   = @()
+if (Test-Path $DohFile) {
+  $DohServers = @(Get-Content $DohFile | ForEach-Object { $_.Trim() } | Where-Object { $_ -like 'http*' })
+}
+if ($DohServers.Count -eq 0) {
+  $DohServers = @('https://dns.dagami.ru/dns-query', 'https://dns.zapret.moe/dns-query', 'https://dns.bezmezhau.com/dns-query')
+}
 $DohTimeout   = 4
+$FullScanEvery = 3 * 3600    # полный перебор адресов не чаще раза в 3 часа
 $NotifyEvery  = 6 * 3600     # не чаще раза в 6 часов на одно и то же событие
 $Api          = "https://api.github.com/repos/$Repo/contents/health.txt"
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
@@ -50,24 +59,31 @@ function Log($msg) {
   try { if ((Get-Item $LogFile).Length -gt 512KB) { $keep = Get-Content $LogFile -Tail 400; Set-Content -Path $LogFile -Value $keep -Encoding UTF8 } } catch {}
 }
 
+# Состояние: время последней полной проверки и отметки показанных уведомлений.
+function Read-State() {
+  $s = @{}
+  try {
+    if (Test-Path $StateFile) {
+      foreach ($l in (Get-Content $StateFile)) {
+        if ($l -match '^(\S+)\s+(\d+)$') { $s[$Matches[1]] = [long]$Matches[2] }
+      }
+    }
+  } catch {}
+  return $s
+}
+function Write-State($s) {
+  try { ($s.Keys | ForEach-Object { "$_ $($s[$_])" }) | Set-Content -Path $StateFile -Encoding UTF8 } catch {}
+}
+
 # Уведомление в трей. Ничего не устанавливаем, обходимся WinForms.
 # Одно и то же событие показываем не чаще раза в $NotifyEvery секунд.
 function Alert([string]$key, [string]$title, [string]$text) {
   if ($NoNotify) { return }
-  $state = @{}
-  try {
-    if (Test-Path $StateFile) {
-      foreach ($l in (Get-Content $StateFile)) {
-        if ($l -match '^(\S+)\s+(\d+)$') { $state[$Matches[1]] = [long]$Matches[2] }
-      }
-    }
-  } catch {}
+  $state = Read-State
   $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
   if ($state.ContainsKey($key) -and ($now - $state[$key]) -lt $NotifyEvery) { return }
   $state[$key] = $now
-  try {
-    ($state.Keys | ForEach-Object { "$_ $($state[$_])" }) | Set-Content -Path $StateFile -Encoding UTF8
-  } catch {}
+  Write-State $state
   try {
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName System.Drawing
@@ -117,15 +133,6 @@ if (-not $cur.MAIN) {
   Log "Старт от defaults.txt: MAIN=$($cur.MAIN) ALT=$($cur.ALT) GEMINI=$($cur.GEMINI)"
 }
 
-# --- ядро EU-адресов ---
-$counts = @{}
-$eu = (& curl.exe -s -m 30 $EuHosts) -split "`n"
-foreach ($l in $eu) {
-  if ($l -match '^\s*(\d{1,3}(?:\.\d{1,3}){3})\s+\S') { $counts[$Matches[1]] = 1 + [int]$counts[$Matches[1]] }
-}
-$core = @($counts.Keys | Where-Object { $counts[$_] -ge 500 })
-if ($core.Count -eq 0) { Log 'Не удалось получить список EU-адресов (raw.githubusercontent.com недоступен?)'; exit 1 }
-
 # --- проверка одного адреса: среднее время TLS (мс) по всем доменам или $null ---
 function Test-Proxy([string]$ip) {
   $sum = 0.0
@@ -145,6 +152,31 @@ function Test-Proxy([string]$ip) {
   return [int]($sum * 1000 / $TestDomains.Count)
 }
 
+# --- быстрая проверка: живы ли текущие адреса (один запрос на домен) ---
+function Test-Alive([string]$ip) {
+  if (-not $ip) { return $false }
+  foreach ($d in @('claude.ai', 'chatgpt.com')) {
+    $code = ("" + (& curl.exe -s --connect-timeout 4 -m 8 -o NUL -w '%{http_code}' --resolve "${d}:443:$ip" "https://$d" 2>$null)).Trim()
+    # claude.ai через прокси честно отдаёт 403: значит TLS прошёл и запрос дошёл
+    if ($code -notmatch '^(200|301|302|403)$') { return $false }
+  }
+  return $true
+}
+
+# --- ответы сторонних DoH: уникальные адреса для домена ---
+function Get-DohAddress([string]$domain) {
+  $out = New-Object System.Collections.Generic.List[string]
+  foreach ($d in $DohServers) {
+    if (-not $d) { continue }
+    $ip = ("" + (& curl.exe -s --connect-timeout 3 -m $DohTimeout --doh-url $d -o NUL -w '%{remote_ip}' "https://$domain/" 2>$null)).Trim()
+    if ($ip -match '^\d{1,3}(\.\d{1,3}){3}$') {
+      Log "  DoH $d -> $ip ($domain)"
+      if (-not $out.Contains($ip)) { $out.Add($ip) }
+    }
+  }
+  return $out
+}
+
 # --- Gemini: Ok = веб-чат без /sorry и AI Studio живой; Ai = живой хотя бы AI Studio ---
 function Test-Gemini([string]$ip) {
   $g = ("" + (& curl.exe -s --connect-timeout 4 -m 12 -o NUL -w '%{http_code} %{redirect_url}' --resolve "gemini.google.com:443:$ip" 'https://gemini.google.com/' 2>$null)).Trim()
@@ -157,16 +189,65 @@ function Test-Gemini([string]$ip) {
 }
 
 # --- 1. MAIN / ALT ---
+# Между полными переборами (раз в 3 часа) скрипт запускается каждый час и только
+# проверяет, живы ли текущие адреса. Если да - выходит, ничего не коммитя.
+$state = Read-State
+$now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+$lastFull = 0
+if ($state.ContainsKey('fullscan')) { $lastFull = [long]$state['fullscan'] }
+$source = 'GeoHide EU'
+
+if (($now - $lastFull) -lt $FullScanEvery) {
+  $okMain = Test-Alive $cur.MAIN
+  $okAlt  = Test-Alive $cur.ALT
+  if ($okMain -and $okAlt) {
+    $left = [int](($FullScanEvery - ($now - $lastFull)) / 60)
+    Log "Быстрая проверка: MAIN=$($cur.MAIN) жив, ALT=$($cur.ALT) жив. Полный перебор не раньше чем через $left мин"
+    exit 0
+  }
+  $stMain = 'мертв'; if ($okMain) { $stMain = 'жив' }
+  $stAlt  = 'мертв'; if ($okAlt)  { $stAlt  = 'жив' }
+  Log "Быстрая проверка: MAIN=$($cur.MAIN) $stMain, ALT=$($cur.ALT) $stAlt. Запускаю полный перебор"
+}
+
+# --- ядро EU-адресов GeoHide ---
+$counts = @{}
+$eu = (& curl.exe -s -m 30 $EuHosts) -split "`n"
+foreach ($l in $eu) {
+  if ($l -match '^\s*(\d{1,3}(?:\.\d{1,3}){3})\s+\S') { $counts[$Matches[1]] = 1 + [int]$counts[$Matches[1]] }
+}
+$core = @($counts.Keys | Where-Object { $counts[$_] -ge 500 })
+
 $scores = @{}
 foreach ($ip in $core) {
   $s = Test-Proxy $ip
   if ($null -ne $s) { $scores[$ip] = $s }
 }
+if ($core.Count -gt 0) {
+  Log ("EU-адреса: " + (($core | ForEach-Object { if ($scores.ContainsKey($_)) { "$_=$($scores[$_])мс" } else { "$_=мертв" } }) -join '  '))
+} else {
+  Log 'EU-hosts недоступен, смотрю только ответы сторонних DoH'
+}
+
+# Аварийный режим: ни один адрес GeoHide не ответил. Берём кандидатов у сторонних
+# резолверов, но проверяем тем же тестом: адрес обязан проксировать все тестовые домены.
+if ($scores.Count -eq 0) {
+  $pool = @(Get-DohAddress 'claude.ai')
+  foreach ($ip in (Get-DohAddress 'chatgpt.com')) { if ($pool -notcontains $ip) { $pool += $ip } }
+  foreach ($ip in $pool) {
+    $s = Test-Proxy $ip
+    if ($null -ne $s) { $scores[$ip] = $s }
+  }
+  $source = 'DoH'
+  if ($pool.Count -gt 0) {
+    Log ("Ответы DoH: " + (($pool | ForEach-Object { if ($scores.ContainsKey($_)) { "$_=$($scores[$_])мс" } else { "$_=мертв" } }) -join '  '))
+  }
+}
+
 $ranked = @($scores.Keys | Sort-Object { $scores[$_] })
-Log ("EU-адреса: " + (($core | ForEach-Object { if ($scores.ContainsKey($_)) { "$_=$($scores[$_])мс" } else { "$_=мертв" } }) -join '  '))
 if ($ranked.Count -eq 0) {
-  Log 'Ни один EU-адрес не отвечает, health.txt не трогаю'
-  Alert 'main-dead' 'GeoHide: живых адресов нет' 'Ни один EU-адрес не прошёл проверку TLS. Проверь провайдера, zapret и апстрим GeoHide.'
+  Log 'Живых адресов нет ни в GeoHide, ни в DoH, health.txt не трогаю'
+  Alert 'main-dead' 'GeoHide: живых адресов нет' 'Ни один адрес не прошёл проверку TLS: ни EU-серверы GeoHide, ни ответы сторонних DoH. Проверь провайдера и zapret.'
   exit 2
 }
 
@@ -178,17 +259,15 @@ if ($cur.ALT -and $cur.ALT -ne $main -and $scores.ContainsKey($cur.ALT)) { $alt 
 if (-not $alt) { $alt = $ranked | Where-Object { $_ -ne $main } | Select-Object -First 1 }
 if (-not $alt) { $alt = $main }
 
+# перебор удался - запоминаем время, следующие 3 часа только быстрая проверка
+$state['fullscan'] = $now
+Write-State $state
+Log "Перебор закончен (источник $source): MAIN=$main $($scores[$main])мс, ALT=$alt $($scores[$alt])мс"
+
 # --- 2. GEMINI ---
 $cand = New-Object System.Collections.Generic.List[string]
 if ($cur.GEMINI) { $cand.Add($cur.GEMINI) }
-foreach ($d in $DohServers) {
-  $ip = & curl.exe -s --connect-timeout 3 -m $DohTimeout --doh-url $d -o NUL -w '%{remote_ip}' 'https://gemini.google.com/' 2>$null
-  $ip = "$ip".Trim()
-  if ($ip -match '^\d{1,3}(\.\d{1,3}){3}$') {
-    Log "  DoH $d -> $ip"
-    if (-not $cand.Contains($ip)) { $cand.Add($ip) }
-  }
-}
+foreach ($ip in (Get-DohAddress 'gemini.google.com')) { if (-not $cand.Contains($ip)) { $cand.Add($ip) } }
 foreach ($ip in $ranked) { if (-not $cand.Contains($ip)) { $cand.Add($ip) } }
 $gemini = $null
 $aiOnly = $null
@@ -220,6 +299,7 @@ if (-not $ForceCommit -and $main -eq $cur.MAIN -and $alt -eq $cur.ALT -and $gemi
 }
 $body = @("# Пишется tools/geohide-probe.ps1 с ПК пользователя (проверка с его провайдера).",
           "# checked $((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))",
+          "# source: $source",
           "# gemini: $geminiState",
           "MAIN $main $($scores[$main])",
           "ALT $alt $($scores[$alt])")

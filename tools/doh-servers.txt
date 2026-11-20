@@ -1,0 +1,21 @@
+# Сторонние DoH-резолверы. Из их ответов берутся адреса двух видов:
+#   1) для Gemini и AI Studio: ищем адрес, который не отдаёт google.com/sorry;
+#   2) запасной пул для MAIN и ALT, если все EU-адреса GeoHide замолчали.
+# Формат: полный URL, https://хост/dns-query. Строки с # и пустые пропускаются.
+#
+# Проверено 20.11.2026 с домашнего провайдера: отвечают dns.dagami.ru и
+# dns.geodema.love, остальные таймаут или не разрешают имя. Оставлены все:
+# сервисы оживают и умирают, а проверка сама отбросит мёртвые.
+#
+# Адрес из чужого резолвера не становится MAIN без проверки: скрипт прогоняет
+# его тем же тестом TLS на трёх доменах, что и адреса GeoHide.
+https://dns.dagami.ru/dns-query
+https://dns.geodema.love/dns-query
+https://dns.bezmezhau.com/dns-query
+https://dns.zapret.moe/dns-query
+https://dns.dns-ai.ru/dns-query
+https://dns.malw.link/dns-query
+https://dns.magicdns.ru/dns-query
+https://dns.wlrus.cfd/dns-query
+https://d.webshiftvpn.ru/dns-query
+https://w.quic.best/dns-query
