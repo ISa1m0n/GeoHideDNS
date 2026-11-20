@@ -1,6 +1,7 @@
 # Пишется tools/geohide-probe.ps1 с ПК пользователя (проверка с его провайдера).
-# checked 2026-11-19T19:44:49Z
+# checked 2026-11-20T05:14:46Z
+# source: GeoHide EU
 # gemini: clean
-MAIN 45.13.237.213 98
-ALT 5.175.161.3 158
-GEMINI 45.86.72.85
+MAIN 45.13.237.213 99
+ALT 5.175.161.3 95
+GEMINI 142.251.154.2
