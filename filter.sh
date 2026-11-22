@@ -141,22 +141,52 @@ if ! [[ "$GEMINI" =~ $IPRE ]]; then GEMINI=""; fi
 
 # "ядро" прокси: IP, которые стоят почти у каждого домена EU-hosts
 awk '$1 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ { c[$1]++ } END { for (i in c) if (c[i] >= 500) print i }' upstream.tmp > core-ips.tmp
-if ! grep -qxF "$MAIN" core-ips.tmp; then
-  echo "MAIN $MAIN не найден среди основных IP EU-hosts: $(tr '\n' ' ' < core-ips.tmp)" >&2
-  exit 1
+# Режим сборки.
+#   filter  - MAIN и ALT среди ядра EU-hosts: берём строки апстрима, выкидываем плохие IP.
+#   rewrite - MAIN или ALT вне ядра (аварийный адрес из стороннего DoH, его нет в hosts GeoHide):
+#             берём только список доменов из апстрима и сами ставим на каждый MAIN.
+#             Раньше тут была ошибка и сборка падала, hosts-ai.txt оставался со старым мёртвым адресом.
+MODE=filter
+if ! grep -qxF "$MAIN" core-ips.tmp; then MODE=rewrite; fi
+if [ "$ALT" != "$MAIN" ] && ! grep -qxF "$ALT" core-ips.tmp; then MODE=rewrite; fi
+if [ "$MODE" = rewrite ]; then
+  echo "::warning::MAIN/ALT ($MAIN/$ALT) вне ядра EU-hosts ($(tr '\n' ' ' < core-ips.tmp)), режим rewrite"
 fi
-# плохие IP: bad-ips.txt + всё ядро, кроме MAIN (так все домены идут на один живой адрес)
-{ tr -d '\r' < bad-ips.txt | sed 's/[[:space:]]*$//' | grep -vE '^(#|$)' || true; cat core-ips.tmp; } \
-  | sort -u | grep -vxF "$MAIN" > bad.tmp
+# плохие IP: bad-ips.txt (+ в режиме filter всё ядро, кроме MAIN, чтобы все домены шли на один живой адрес)
+{ tr -d '\r' < bad-ips.txt | sed 's/[[:space:]]*$//' | grep -vE '^(#|$)' || true;
+  if [ "$MODE" = filter ]; then cat core-ips.tmp; fi; } \
+  | sort -u | { if [ "$MODE" = filter ]; then grep -vxF "$MAIN"; else cat; fi; } > bad.tmp
 sed -e "s/@MAIN/$MAIN/g" -e "s/@ALT/$ALT/g" pin-ips.txt > pin.tmp
 if [ -n "$GEMINI" ]; then
   sed "s/@GEMINI/$GEMINI/g" custom-hosts.txt > custom.tmp
 else
   grep -v '@GEMINI' custom-hosts.txt > custom.tmp || true
 fi
-echo "Адреса: MAIN=$MAIN ALT=$ALT GEMINI=${GEMINI:-нет}"
+echo "Адреса: MAIN=$MAIN ALT=$ALT GEMINI=${GEMINI:-нет} режим=$MODE"
 
 # 2. плохие IP и закреплённые IP
+if [ "$MODE" = rewrite ]; then
+  # Каждый домен один раз (из строк с не плохим IP). IP: строка из us-domains.txt,
+  # иначе закрепление из pin-ips.txt (адрес может отсутствовать в hosts GeoHide), иначе MAIN.
+  awk -v main="$MAIN" '
+    FILENAME == ARGV[1] { sub(/[ \t\r]+$/, ""); if ($0 != "" && $0 !~ /^#/) bad[$0] = 1; next }
+    FILENAME == ARGV[2] { if ($0 !~ /^#/ && NF >= 2) { np++; pd[np] = $1; pip[np] = $2 } next }
+    FILENAME == ARGV[3] { sub(/\r$/, ""); if ($0 !~ /^[ \t]*#/ && NF >= 2) ud[$1] = $2; next }
+    /^#/ || NF < 2 { print; next }
+    {
+      ip = $1; dom = $2
+      if (ip in bad) next
+      if (seen[dom]++) next
+      out = main
+      if (dom in ud) out = ud[dom]
+      else for (k = 1; k <= np; k++) {
+        p = pd[k]
+        if (dom == p || (length(dom) > length(p) && substr(dom, length(dom) - length(p)) == "." p)) { out = pip[k]; break }
+      }
+      print out, dom
+    }
+  ' bad.tmp pin.tmp us-domains.txt filtered.tmp > "$OUT.new"
+else
 awk '
   FILENAME == ARGV[1] { sub(/[ \t\r]+$/, ""); if ($0 != "" && $0 !~ /^#/) bad[$0] = 1; next }
   FILENAME == ARGV[2] { if ($0 !~ /^#/ && NF >= 2) { np++; pd[np] = $1; pip[np] = $2 } next }
@@ -174,6 +204,7 @@ awk '
     if (!pinned && !(ip in bad)) print
   }
 ' bad.tmp pin.tmp filtered.tmp > "$OUT.new"
+fi
 
 # 3. Ручные закрепления из custom-hosts.txt (формат: "домен IP"), последним шагом.
 #    IP берётся как есть, без проверки по hosts GeoHide. Старые строки этих доменов
