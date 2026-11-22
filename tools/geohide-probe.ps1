@@ -1,4 +1,4 @@
-﻿<#
+<#
  geohide-probe.ps1 - проверка прокси GeoHide с ПК пользователя (с его провайдера).
  Раннер GitHub в США не видит блокировок РКН, поэтому живость адресов проверяется здесь.
 
@@ -188,6 +188,27 @@ function Test-Gemini([string]$ip) {
   return @{ Ok = ($gOk -and $aOk); Ai = $aOk; Info = "gemini: $gs | aistudio: $as" }
 }
 
+# --- собрался ли hosts-ai.txt с текущим MAIN ---
+# Проверка живости MAIN этого не ловит: адрес жив, а сборка в Actions упала, и в hosts-ai.txt
+# (откуда его берут DnsConf и роутер) остался старый мёртвый. Так было 22.11.2026: MAIN из DoH
+# не прошёл проверку filter.sh, скрипт каждый раз писал "без изменений", а ИИ без VPN не открывался.
+function Test-HostsBuilt([string]$main) {
+  if (-not $main) { return $true }
+  try {
+    $h = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/contents/hosts-ai.txt?ref=$Branch" -Headers $Headers -ErrorAction Stop
+    $t = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($h.content -replace '\s', '')))
+    return ([regex]::Matches($t, "(?m)^$([regex]::Escape($main))\s")).Count -ge 200
+  } catch {
+    Log "Не удалось прочитать hosts-ai.txt: $($_.Exception.Message)"
+    return $true   # не знаем - не тревожим
+  }
+}
+function Check-Built([string]$main) {
+  if (Test-HostsBuilt $main) { return }
+  Log "hosts-ai.txt в форке не содержит MAIN ${main}: сборка в Actions, похоже, упала"
+  Alert 'build-stale' 'GeoHide: hosts-ai.txt не обновился' "Адрес $main жив, но в hosts-ai.txt его нет. Открой Actions в ISa1m0n/GeoHideDNS: сборка, скорее всего, красная."
+}
+
 # --- 1. MAIN / ALT ---
 # Между полными переборами (раз в 3 часа) скрипт запускается каждый час и только
 # проверяет, живы ли текущие адреса. Если да - выходит, ничего не коммитя.
@@ -203,6 +224,7 @@ if (($now - $lastFull) -lt $FullScanEvery) {
   if ($okMain -and $okAlt) {
     $left = [int](($FullScanEvery - ($now - $lastFull)) / 60)
     Log "Быстрая проверка: MAIN=$($cur.MAIN) жив, ALT=$($cur.ALT) жив. Полный перебор не раньше чем через $left мин"
+    Check-Built $cur.MAIN
     exit 0
   }
   $stMain = 'мертв'; if ($okMain) { $stMain = 'жив' }
@@ -295,6 +317,7 @@ if (-not $gemini) { $gemini = $cur.GEMINI }   # нет лучшего - оста
 # --- 3. нужно ли обновлять health.txt ---
 if (-not $ForceCommit -and $main -eq $cur.MAIN -and $alt -eq $cur.ALT -and $gemini -eq $cur.GEMINI) {
   Log "Без изменений: MAIN=$main ALT=$alt GEMINI=$gemini ($geminiState)"
+  Check-Built $main
   exit 0
 }
 $body = @("# Пишется tools/geohide-probe.ps1 с ПК пользователя (проверка с его провайдера).",
@@ -346,7 +369,10 @@ if ($needMain -or $needAlt -or $needGem) {
     } catch {}
   }
   if ($ready) { Log 'hosts-ai.txt пересобран с новыми адресами' }
-  else { Log 'Пересборка не успела за 4 минуты, запускаю DnsConf на том, что есть' }
+  else {
+    Log 'Пересборка не успела за 4 минуты, запускаю DnsConf на том, что есть'
+    Check-Built $main
+  }
 }
 
 # --- 5. запускаем DnsConf, чтобы NextDNS обновился без ожидания крона ---
