@@ -135,9 +135,9 @@
 5.175.161.3 w.deepl.com
 5.175.161.3 write-free.www.deepl.com
 # Deezer
-5.175.161.3 deezer.com
+31.25.239.132 deezer.com
 5.175.161.3 www.deezer.com
-5.175.161.3 payment.deezer.com
+31.25.239.132 payment.deezer.com
 # ElevenLabs AI
 5.175.161.3 api.elevenlabs.io
 5.175.161.3 api.us.elevenlabs.io
@@ -236,17 +236,17 @@
 5.175.161.3 myjetbrains.com
 5.175.161.3 www.myjetbrains.com
 # Last.fm
-5.175.161.3 autodiscover.last.fm
-5.175.161.3 jira.last.fm
-5.175.161.3 last.fm
+31.25.239.132 autodiscover.last.fm
+31.25.239.132 jira.last.fm
+31.25.239.132 last.fm
 5.175.161.3 www.last.fm
-5.175.161.3 s.last.fm
-5.175.161.3 saa.last.fm
-5.175.161.3 secure.last.fm
-5.175.161.3 shop.last.fm
-5.175.161.3 store.last.fm
-5.175.161.3 support.last.fm
-5.175.161.3 wiki.last.fm
+31.25.239.132 s.last.fm
+31.25.239.132 saa.last.fm
+31.25.239.132 secure.last.fm
+31.25.239.132 shop.last.fm
+31.25.239.132 store.last.fm
+31.25.239.132 support.last.fm
+31.25.239.132 wiki.last.fm
 5.175.161.3 ws.audioscrobbler.com
 # Meta AI
 5.175.161.3 meta.ai
