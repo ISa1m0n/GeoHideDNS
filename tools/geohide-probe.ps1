@@ -1,4 +1,4 @@
-<#
+﻿<#
  geohide-probe.ps1 - проверка прокси GeoHide с ПК пользователя (с его провайдера).
  Раннер GitHub в США не видит блокировок РКН, поэтому живость адресов проверяется здесь.
 
@@ -6,9 +6,13 @@
   1. Полная проверка (раз в 3 часа): берёт "ядро" EU-адресов GeoHide (IP, которые стоят
      почти у каждого домена EU-hosts) и проверяет TLS до claude.ai, chatgpt.com и
      platform.claude.com, выбирает MAIN (самый быстрый живой) и ALT (второй).
-     Если все EU-адреса молчат, берёт адреса из сторонних DoH (doh-servers.txt).
+     Если все EU-адреса молчат, берёт адреса из сторонних DoH (doh-servers.txt) и
+     считает их покрытие по coverage-domains.txt: чужой прокси часто умеет только часть
+     списка. Из живых берётся тот, кто покрывает больше доменов, при равенстве - быстрее.
   2. Между полными проверками (запуск каждый час) только пингует текущие MAIN и ALT
      и при их смерти запускает полную проверку. Полсотни TLS-запросов каждый час не нужны.
+     Заодно сверяет, что в hosts-ai.txt форка есть текущий MAIN: если сборка в Actions
+     упала, в трее появляется уведомление.
   3. Для Gemini ищет адрес без google.com/sorry: сначала среди DoH-ответов, потом среди
      проверенных адресов. Статус Gemini пишется комментарием в health.txt:
      clean / ai-only / dead.
@@ -46,6 +50,18 @@ if ($DohServers.Count -eq 0) {
   $DohServers = @('https://dns.dagami.ru/dns-query', 'https://dns.zapret.moe/dns-query', 'https://dns.bezmezhau.com/dns-query')
 }
 $DohTimeout   = 4
+# Домены для оценки покрытия. Чужой DoH-прокси обычно проксирует не весь список,
+# поэтому перед выбором MAIN проверяем, какие из этих доменов он реально отдаёт.
+# Список лежит в coverage-domains.txt; порядок не важен, первый домен ничем не главнее.
+$CoverFile    = Join-Path $PSScriptRoot 'coverage-domains.txt'
+$CoverDomains = @('chatgpt.com', 'claude.ai', 'platform.claude.com', 'openrouter.ai', 'deepl.com',
+                  'last.fm', 'www.deezer.com', 'grok.com', 'windsurf.com', 'huggingface.co',
+                  'meta.ai', 'opencode.ai')
+if (Test-Path $CoverFile) {
+  $list = @(Get-Content $CoverFile | ForEach-Object { ($_ -replace '(^|\s)#.*$', '').Trim() } | Where-Object { $_ })
+  if ($list.Count -gt 0) { $CoverDomains = $list }
+}
+$CoverMin     = 0.75         # ниже этой доли покрытия адрес считается плохой заменой
 $FullScanEvery = 3 * 3600    # полный перебор адресов не чаще раза в 3 часа
 $NotifyEvery  = 6 * 3600     # не чаще раза в 6 часов на одно и то же событие
 $Api          = "https://api.github.com/repos/$Repo/contents/health.txt"
@@ -177,6 +193,25 @@ function Get-DohAddress([string]$domain) {
   return $out
 }
 
+# --- покрытие: какие домены из списка адрес реально проксирует ---
+# Отвечает любой HTTP-код - значит TLS прошёл и прокси домен знает. Ошибка 35
+# (SSL connect error) и таймаут означают, что домен через этот адрес не ходит.
+function Test-Coverage([string]$ip) {
+  $ok = 0
+  $bad = New-Object System.Collections.Generic.List[string]
+  foreach ($d in $CoverDomains) {
+    $code = ("" + (& curl.exe -s --connect-timeout 3 -m 8 -o NUL -w '%{http_code}' --resolve "${d}:443:$ip" "https://$d/" 2>$null)).Trim()
+    # 000 - это не ответ: соединение не установилось. Любой настоящий код годится.
+    if ($code -match '^[1-9]\d{2}$') { $ok++ } else { $bad.Add($d) }
+  }
+  return @{ Ok = $ok; Total = $CoverDomains.Count; Bad = @($bad) }
+}
+function Format-Coverage($c) {
+  $s = "$($c.Ok)/$($c.Total)"
+  if ($c.Bad.Count -gt 0) { $s += " (нет: $($c.Bad -join ', '))" }
+  return $s
+}
+
 # --- Gemini: Ok = веб-чат без /sorry и AI Studio живой; Ai = живой хотя бы AI Studio ---
 function Test-Gemini([string]$ip) {
   $g = ("" + (& curl.exe -s --connect-timeout 4 -m 12 -o NUL -w '%{http_code} %{redirect_url}' --resolve "gemini.google.com:443:$ip" 'https://gemini.google.com/' 2>$null)).Trim()
@@ -253,6 +288,7 @@ if ($core.Count -gt 0) {
 
 # Аварийный режим: ни один адрес GeoHide не ответил. Берём кандидатов у сторонних
 # резолверов, но проверяем тем же тестом: адрес обязан проксировать все тестовые домены.
+$cover = @{}
 if ($scores.Count -eq 0) {
   $pool = @(Get-DohAddress 'claude.ai')
   foreach ($ip in (Get-DohAddress 'chatgpt.com')) { if ($pool -notcontains $ip) { $pool += $ip } }
@@ -264,27 +300,59 @@ if ($scores.Count -eq 0) {
   if ($pool.Count -gt 0) {
     Log ("Ответы DoH: " + (($pool | ForEach-Object { if ($scores.ContainsKey($_)) { "$_=$($scores[$_])мс" } else { "$_=мертв" } }) -join '  '))
   }
+  # Чужой прокси часто знает только часть доменов. Считаем покрытие и отбрасываем
+  # тех, кто не дотягивает до $CoverMin: иначе весь список уйдёт на полудохлый адрес.
+  # Если не дотягивает никто, оставляем лучшего: частичный прокси всё равно лучше
+  # мёртвого адреса, а в трее будет предупреждение.
+  $need = [int][Math]::Ceiling($CoverDomains.Count * $CoverMin)
+  foreach ($ip in @($scores.Keys)) {
+    $c = Test-Coverage $ip
+    $cover[$ip] = $c
+    Log "  Покрытие ${ip}: $(Format-Coverage $c)"
+  }
+  $good = @($scores.Keys | Where-Object { $cover[$_].Ok -ge $need })
+  if ($good.Count -gt 0 -and $good.Count -lt $scores.Count) {
+    foreach ($ip in @($scores.Keys)) {
+      if ($good -notcontains $ip) { Log "  $ip отброшен: меньше $([int]($CoverMin * 100))% от списка проверенных доменов"; $scores.Remove($ip) }
+    }
+  } elseif ($scores.Count -gt 0) {
+    Log "  Ни один адрес не покрывает $([int]($CoverMin * 100))% списка, беру лучший из худших"
+  }
 }
 
-$ranked = @($scores.Keys | Sort-Object { $scores[$_] })
+$ranked = @($scores.Keys | Sort-Object -Property `
+  @{ Expression = { if ($cover.ContainsKey($_)) { $cover[$_].Ok } else { 0 } }; Descending = $true }, `
+  @{ Expression = { $scores[$_] }; Descending = $false })
 if ($ranked.Count -eq 0) {
-  Log 'Живых адресов нет ни в GeoHide, ни в DoH, health.txt не трогаю'
-  Alert 'main-dead' 'GeoHide: живых адресов нет' 'Ни один адрес не прошёл проверку TLS: ни EU-серверы GeoHide, ни ответы сторонних DoH. Проверь провайдера и zapret.'
+  Log 'Живых адресов, покрывающих список, нет ни в GeoHide, ни в DoH, health.txt не трогаю'
+  Alert 'main-dead' 'GeoHide: живых адресов нет' 'Ни один адрес не прошёл проверку: EU-серверы GeoHide молчат, а ответы сторонних DoH проксируют слишком мало доменов. Проверь провайдера и zapret.'
   exit 2
 }
 
 $main = $ranked[0]
-# не прыгаем между адресами без нужды: текущий MAIN остаётся, пока жив и не сильно медленнее лучшего
-if ($cur.MAIN -and $scores.ContainsKey($cur.MAIN) -and $scores[$cur.MAIN] -le ($scores[$main] * 1.5 + 60)) { $main = $cur.MAIN }
+# не прыгаем между адресами без нужды: текущий MAIN остаётся, пока жив, не сильно
+# медленнее лучшего и покрывает не меньше доменов
+$keepCur = $true
+if ($cover.ContainsKey($cur.MAIN) -and $cover.ContainsKey($main) -and $cover[$cur.MAIN].Ok -lt $cover[$main].Ok) { $keepCur = $false }
+if ($keepCur -and $cur.MAIN -and $scores.ContainsKey($cur.MAIN) -and $scores[$cur.MAIN] -le ($scores[$main] * 1.5 + 60)) { $main = $cur.MAIN }
 $alt = $null
 if ($cur.ALT -and $cur.ALT -ne $main -and $scores.ContainsKey($cur.ALT)) { $alt = $cur.ALT }
 if (-not $alt) { $alt = $ranked | Where-Object { $_ -ne $main } | Select-Object -First 1 }
-if (-not $alt) { $alt = $main }
+if (-not $alt) { $alt = $main; Log 'Живой только один адрес: ALT совпадает с MAIN, разнос www и apex недоступен' }
 
 # перебор удался - запоминаем время, следующие 3 часа только быстрая проверка
 $state['fullscan'] = $now
 Write-State $state
 Log "Перебор закончен (источник $source): MAIN=$main $($scores[$main])мс, ALT=$alt $($scores[$alt])мс"
+
+# Покрытие выбранного адреса: даже сервер GeoHide может не знать часть доменов.
+# Тогда hosts-ai.txt формально собран, а часть сервисов молча не открывается.
+if (-not $cover.ContainsKey($main)) { $cover[$main] = Test-Coverage $main }
+$covMain = $cover[$main]
+Log "Покрытие MAIN ${main}: $(Format-Coverage $covMain)"
+if ($covMain.Ok -lt [int][Math]::Ceiling($CoverDomains.Count * $CoverMin)) {
+  Alert 'coverage' 'GeoHide: адрес проксирует не всё' "MAIN $main отдаёт $($covMain.Ok) из $($covMain.Total) проверенных доменов. Не работают: $($covMain.Bad -join ', '). Эти сервисы открываться не будут, пока не найдётся адрес получше."
+}
 
 # --- 2. GEMINI ---
 $cand = New-Object System.Collections.Generic.List[string]
@@ -323,6 +391,7 @@ if (-not $ForceCommit -and $main -eq $cur.MAIN -and $alt -eq $cur.ALT -and $gemi
 $body = @("# Пишется tools/geohide-probe.ps1 с ПК пользователя (проверка с его провайдера).",
           "# checked $((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))",
           "# source: $source",
+          "# coverage: $($covMain.Ok)/$($covMain.Total)",
           "# gemini: $geminiState",
           "MAIN $main $($scores[$main])",
           "ALT $alt $($scores[$alt])")

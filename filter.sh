@@ -178,7 +178,7 @@ if [ "$MODE" = rewrite ]; then
       if (ip in bad) next
       if (seen[dom]++) next
       out = main
-      if (dom in ud) out = ud[dom]
+      if ((dom in ud) && !(ud[dom] in bad)) out = ud[dom]
       else for (k = 1; k <= np; k++) {
         p = pd[k]
         if (dom == p || (length(dom) > length(p) && substr(dom, length(dom) - length(p)) == "." p)) { out = pip[k]; break }
