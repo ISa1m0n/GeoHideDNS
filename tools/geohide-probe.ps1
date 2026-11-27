@@ -1,4 +1,4 @@
-﻿<#
+<#
  geohide-probe.ps1 - проверка прокси GeoHide с ПК пользователя (с его провайдера).
  Раннер GitHub в США не видит блокировок РКН, поэтому живость адресов проверяется здесь.
 
@@ -27,7 +27,7 @@
      (не чаще раза в 6 часов на событие).
 
  Пропускает проверку, если включён VPN-адаптер или запущен zapret (winws): результат был бы ложным.
- Токен: fine-grained, репозитории ISa1m0n/GeoHideDNS и ISa1m0n/DnsConf, право Contents: Read and write.
+ Токен: fine-grained, репозитории ISa1m0n/ai-hosts и ISa1m0n/nextdns-sync, право Contents: Read and write.
  Лежит рядом со скриптом в файле geohide-probe.token (одна строка).
 
  Параметры: -DryRun (ничего не коммитить), -Force (не пропускать при VPN/zapret), -NoNotify (без уведомлений),
@@ -35,8 +35,8 @@
 #>
 param([switch]$DryRun, [switch]$Force, [switch]$NoNotify, [switch]$ForceCommit)
 
-$Repo         = 'ISa1m0n/GeoHideDNS'
-$DispatchRepo = 'ISa1m0n/DnsConf'
+$Repo         = 'ISa1m0n/ai-hosts'
+$DispatchRepo = 'ISa1m0n/nextdns-sync'
 $Branch       = 'main'
 $TokenFile    = Join-Path $PSScriptRoot 'geohide-probe.token'
 $LogFile      = Join-Path $PSScriptRoot 'geohide-probe.log'
@@ -320,7 +320,7 @@ function Repair-Pins($pool) {
     Log "custom-hosts.txt обновлён: $summary"
   } catch {
     Log "Не удалось записать custom-hosts.txt: $($_.Exception.Message)"
-    Alert 'pin-commit-fail' 'GeoHide: не удалось вылечить закрепление' "custom-hosts.txt не записался: $($_.Exception.Message)"
+    Alert 'pin-commit-fail' 'ai-hosts: не удалось вылечить закрепление' "custom-hosts.txt не записался: $($_.Exception.Message)"
     return @()
   }
   return $changes
@@ -358,12 +358,12 @@ function Send-Dispatch([string]$m, [string]$a, [string]$g, [string]$st) {
 function Check-Built([string]$main) {
   if (-not (Test-HostsBuilt $main)) {
     Log "hosts-ai.txt в форке не содержит MAIN ${main}: сборка в Actions, похоже, упала"
-    Alert 'build-stale' 'GeoHide: hosts-ai.txt не обновился' "Адрес $main жив, но в hosts-ai.txt его нет. Открой Actions в ISa1m0n/GeoHideDNS: сборка, скорее всего, красная."
+    Alert 'build-stale' 'ai-hosts: hosts-ai.txt не обновился' "Адрес $main жив, но в hosts-ai.txt его нет. Открой Actions в ISa1m0n/ai-hosts: сборка, скорее всего, красная."
   }
   $pins = @(Test-Pins)
   if ($pins.Count -gt 0) {
     Log "Закреплённые домены не отвечают: $($pins -join ', ')"
-    Alert 'pin-dead' 'GeoHide: закреплённый адрес не работает' "Не открываются: $($pins -join ', '). Самолечение не помогло: ни прямой адрес домена, ни живой прокси не ответили. Проверь custom-hosts.txt."
+    Alert 'pin-dead' 'ai-hosts: закреплённый адрес не работает' "Не открываются: $($pins -join ', '). Самолечение не помогло: ни прямой адрес домена, ни живой прокси не ответили. Проверь custom-hosts.txt."
   }
 }
 
@@ -454,7 +454,7 @@ $ranked = @($scores.Keys | Sort-Object -Property `
   @{ Expression = { $scores[$_] }; Descending = $false })
 if ($ranked.Count -eq 0) {
   Log 'Живых адресов, покрывающих список, нет ни в GeoHide, ни в DoH, health.txt не трогаю'
-  Alert 'main-dead' 'GeoHide: живых адресов нет' 'Ни один адрес не прошёл проверку: EU-серверы GeoHide молчат, а ответы сторонних DoH проксируют слишком мало доменов. Проверь провайдера и zapret.'
+  Alert 'main-dead' 'ai-hosts: живых адресов нет' 'Ни один адрес не прошёл проверку: EU-серверы GeoHide молчат, а ответы сторонних DoH проксируют слишком мало доменов. Проверь провайдера и zapret.'
   exit 2
 }
 
@@ -480,7 +480,7 @@ if (-not $cover.ContainsKey($main)) { $cover[$main] = Test-Coverage $main }
 $covMain = $cover[$main]
 Log "Покрытие MAIN ${main}: $(Format-Coverage $covMain)"
 if ($covMain.Ok -lt [int][Math]::Ceiling($CoverDomains.Count * $CoverMin)) {
-  Alert 'coverage' 'GeoHide: адрес проксирует не всё' "MAIN $main отдаёт $($covMain.Ok) из $($covMain.Total) проверенных доменов. Не работают: $($covMain.Bad -join ', '). Эти сервисы открываться не будут, пока не найдётся адрес получше."
+  Alert 'coverage' 'ai-hosts: адрес проксирует не всё' "MAIN $main отдаёт $($covMain.Ok) из $($covMain.Total) проверенных доменов. Не работают: $($covMain.Bad -join ', '). Эти сервисы открываться не будут, пока не найдётся адрес получше."
 }
 
 # --- 1b. самолечение пинов ---
@@ -509,10 +509,10 @@ if ($gemini) {
   $geminiState = 'ai-only'
   $gemini = $aiOnly
   Log "Gemini: веб-чат отдаёт /sorry везде, выбран $aiOnly только ради AI Studio"
-  Alert 'gemini-sorry' 'GeoHide: Gemini-чат недоступен' 'Все адреса отдают google.com/sorry. Живой только AI Studio. Скорее всего, Google ограничил эти IP, настраивать нечего.'
+  Alert 'gemini-sorry' 'ai-hosts: Gemini-чат недоступен' 'Все адреса отдают google.com/sorry. Живой только AI Studio. Скорее всего, Google ограничил эти IP, настраивать нечего.'
 } else {
   Log 'Gemini: подходящего адреса нет, оставляю прежний'
-  Alert 'gemini-dead' 'GeoHide: Gemini лёг' 'Ни веб-чат, ни AI Studio не отвечают ни на одном адресе. Нужен свежий адрес через DoH.'
+  Alert 'gemini-dead' 'ai-hosts: Gemini лёг' 'Ни веб-чат, ни AI Studio не отвечают ни на одном адресе. Нужен свежий адрес через DoH.'
 }
 if (-not $gemini) { $gemini = $cur.GEMINI }   # нет лучшего - оставляем прежний
 
@@ -550,7 +550,7 @@ try {
   Log 'health.txt обновлён, сборка в Actions запущена'
 } catch {
   Log "Не удалось записать health.txt: $($_.Exception.Message)"
-  Alert 'commit-fail' 'GeoHide: не удалось обновить health.txt' "Проверь токен: $($_.Exception.Message)"
+  Alert 'commit-fail' 'ai-hosts: не удалось обновить health.txt' "Проверь токен: $($_.Exception.Message)"
   exit 1
 }
 

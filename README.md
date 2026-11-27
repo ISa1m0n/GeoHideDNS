@@ -1,11 +1,11 @@
 <div align="center">
 
-# hosts-ai для GeoHideDNS
+# hosts-ai
 
 **Компактный hosts-список AI- и dev-сервисов, собранный из публичного GeoHide.**
 
-[![Update filtered GeoHide hosts](https://github.com/ISa1m0n/GeoHideDNS/actions/workflows/update-hosts.yml/badge.svg?branch=main)](https://github.com/ISa1m0n/GeoHideDNS/actions/workflows/update-hosts.yml)
-[![Last commit](https://img.shields.io/github/last-commit/ISa1m0n/GeoHideDNS/main?label=hosts-ai.txt%20updated)](https://github.com/ISa1m0n/GeoHideDNS/commits/main/hosts-ai.txt)
+[![Update filtered GeoHide hosts](https://github.com/ISa1m0n/ai-hosts/actions/workflows/update-hosts.yml/badge.svg?branch=main)](https://github.com/ISa1m0n/ai-hosts/actions/workflows/update-hosts.yml)
+[![Last commit](https://img.shields.io/github/last-commit/ISa1m0n/ai-hosts/main?label=hosts-ai.txt%20updated)](https://github.com/ISa1m0n/ai-hosts/commits/main/hosts-ai.txt)
 [![Live check](https://img.shields.io/badge/live%20check-hourly%20from%20PC-informational)](tools/geohide-probe.ps1)
 
 </div>
@@ -25,7 +25,7 @@ hosts-файл с адресами сервисов, которые не отк�
 Готовый файл всегда доступен по прямой ссылке:
 
 ```
-https://raw.githubusercontent.com/ISa1m0n/GeoHideDNS/main/hosts-ai.txt
+https://raw.githubusercontent.com/ISa1m0n/ai-hosts/main/hosts-ai.txt
 ```
 
 ## Форк специально не сливается с апстримом
@@ -60,14 +60,14 @@ https://raw.githubusercontent.com/ISa1m0n/GeoHideDNS/main/hosts-ai.txt
                                                                               |
                                                              repository_dispatch
                                                                               v
-                                                    DnsConf  ->  rewrites в NextDNS
+                                                    nextdns-sync  ->  rewrites в NextDNS
 ```
 
 1. Проверка на ПК раз в час смотрит, какие адреса живы с твоего провайдера, и при
    изменении коммитит `health.txt`.
 2. Коммит запускает сборку, `filter.sh` пересобирает `hosts-ai.txt`.
 3. Проверка дожидается новой сборки и отправляет `repository_dispatch` в
-   [DnsConf](https://github.com/ISa1m0n/DnsConf), тот накатывает rewrites в NextDNS.
+   [nextdns-sync](https://github.com/ISa1m0n/nextdns-sync), тот накатывает rewrites в NextDNS.
 
 Раннер GitHub стоит в США и блокировок РКН не видит, поэтому живость адресов проверяется
 не здесь, а с домашнего ПК.
@@ -76,7 +76,7 @@ https://raw.githubusercontent.com/ISa1m0n/GeoHideDNS/main/hosts-ai.txt
 
 ### NextDNS
 
-Основной путь. Через [DnsConf](https://github.com/ISa1m0n/DnsConf): он берёт
+Основной путь. Через [nextdns-sync](https://github.com/ISa1m0n/nextdns-sync): он берёт
 `hosts-ai.txt` как источник rewrites и обновляет их по расписанию. Rewrites в NextDNS
 действуют на домен **и его поддомены**, поэтому отдельные `www.*` там не нужны.
 
@@ -170,11 +170,11 @@ EU-адресу, выбор `MAIN` (самый быстрый живой) и `AL
 
 Мёртвый пин скрипт лечит сам: берёт кандидатов из ответов DoH (прямые адреса домена),
 затем из живых прокси, подставляет первый, который реально ответил, переписывает
-`custom-hosts.txt` через API, ждёт пересборку `hosts-ai.txt` и вызывает DnsConf. Если
+`custom-hosts.txt` через API, ждёт пересборку `hosts-ai.txt` и вызывает nextdns-sync. Если
 и это не помогло, приходит уведомление с просьбой проверить файл руками.
 
 Проверено 27.11.2026 на заведомо мёртвом адресе `192.0.2.1` у `deepl.com`: проба
-заменила его на `179.236.130.10` из ответа DoH, дождалась пересборки и вызвала DnsConf.
+заменила его на `179.236.130.10` из ответа DoH, дождалась пересборки и вызвала nextdns-sync.
 
 ### Аварийный пул и покрытие
 
@@ -219,10 +219,10 @@ EU-адресу, выбор `MAIN` (самый быстрый живой) и `AL
 
 ### Установка
 
-1. Склонировать репозиторий (например, `D:\OpenCode\GeoHideDNS`).
+1. Склонировать репозиторий (например, `D:\OpenCode\ai-hosts`).
 2. Положить рядом со скриптом токен: `tools\geohide-probe.token` - fine-grained,
-   репозитории `ISa1m0n/GeoHideDNS` и `ISa1m0n/DnsConf`, право Contents: Read and write.
-3. Задача в Планировщике: `wscript.exe "D:\OpenCode\GeoHideDNS\tools\run-probe-hidden.vbs"`,
+   репозитории `ISa1m0n/ai-hosts` и `ISa1m0n/nextdns-sync`, право Contents: Read and write.
+3. Задача в Планировщике: `wscript.exe "D:\OpenCode\ai-hosts\tools\run-probe-hidden.vbs"`,
    повтор каждый час, от имени текущего пользователя. Запускать `powershell.exe`
    напрямую нельзя: `-WindowStyle Hidden` прячет консоль уже после её создания, окно
    успевает мигнуть и снимает с фокуса игру в полноэкранном режиме. `wscript.exe` -
@@ -307,7 +307,7 @@ EU-адресу, выбор `MAIN` (самый быстрый живой) и `AL
 - Добавлены `tools/doh-servers.txt` и `tools/coverage-domains.txt` - аварийный пул
   сторонних DoH и домены для оценки его покрытия.
 - `custom-hosts.txt` умеет самовосстановление: мёртвый пин проверка заменяет сама
-  (DoH, затем живой прокси) и вызывает DnsConf. `openrouter.ai` закреплён на прокси,
+  (DoH, затем живой прокси) и вызывает nextdns-sync. `openrouter.ai` закреплён на прокси,
   потому что напрямую Cloudflare отдаёт 403 и никакой DNS-подменой это не лечится.
 - `filter.sh` умеет режим `rewrite`: если `MAIN` пришёл из DoH и его нет в hosts
   GeoHide, список собирается на нём, а не остаётся старым.
@@ -317,4 +317,4 @@ EU-адресу, выбор `MAIN` (самый быстрый живой) и `AL
 ## Ссылки
 
 - Апстрим: [Internet-Helper/GeoHideDNS](https://github.com/Internet-Helper/GeoHideDNS)
-- Настройка NextDNS: [ISa1m0n/DnsConf](https://github.com/ISa1m0n/DnsConf)
+- Настройка NextDNS: [ISa1m0n/nextdns-sync](https://github.com/ISa1m0n/nextdns-sync)
