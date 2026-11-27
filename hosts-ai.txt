@@ -110,6 +110,7 @@
 37.221.93.128 checkout.www.deepl.com
 37.221.93.128 clearance.deepl.com
 37.221.93.128 community-auth.deepl.com
+37.221.93.128 deepl.com
 37.221.93.128 www.deepl.com
 37.221.93.128 developers.deepl.com
 37.221.93.128 dict-audio.deepl.com
@@ -324,4 +325,3 @@
 104.18.10.66 www.opencode.ai
 104.18.10.66 models.dev
 37.221.93.128 openrouter.ai
-179.236.130.10 deepl.com
