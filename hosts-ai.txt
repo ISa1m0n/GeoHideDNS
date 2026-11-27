@@ -324,4 +324,4 @@
 104.18.10.66 www.opencode.ai
 104.18.10.66 models.dev
 37.221.93.128 openrouter.ai
-192.0.2.1 deepl.com
+179.236.130.10 deepl.com
