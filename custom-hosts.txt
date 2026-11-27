@@ -23,3 +23,11 @@ signaler-pa.clients6.google.com           @GEMINI
 apis.google.com                           @GEMINI
 suggestqueries.google.com                 @GEMINI
 webchannel-alkalimakersuite-pa.clients6.google.com  @GEMINI
+
+# OpenCode и каталог моделей. 27.11.2026: прокси GeoHide (MAIN 109.120.187.249 из DoH) opencode.ai и models.dev не обслуживает
+# (tls=0), а models.dev в апстриме нет вовсе. Прямые адреса Cloudflare 104.18.10.66 и 104.18.11.66 с домашнего провайдера
+# отдают 200 для обоих доменов (системный DNS даёт 104.21.51.36 и 172.67.220.122, они режутся). Если адрес умрёт, взять новый:
+# curl --doh-url https://dns.geodema.love/dns-query -sv https://opencode.ai/ (строка Trying), проверить curl --resolve.
+opencode.ai      104.18.10.66
+www.opencode.ai  104.18.10.66
+models.dev       104.18.10.66
