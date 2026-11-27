@@ -12,7 +12,8 @@
   2. Между полными проверками (запуск каждый час) только пингует текущие MAIN и ALT
      и при их смерти запускает полную проверку. Полсотни TLS-запросов каждый час не нужны.
      Заодно сверяет, что в hosts-ai.txt форка есть текущий MAIN: если сборка в Actions
-     упала, в трее появляется уведомление.
+     упала, в трее появляется уведомление. Там же проверяются домены, закреплённые
+     в custom-hosts.txt (opencode.ai, models.dev): такой пин стареет молча.
   3. Для Gemini ищет адрес без google.com/sorry: сначала среди DoH-ответов, потом среди
      проверенных адресов. Статус Gemini пишется комментарием в health.txt:
      clean / ai-only / dead.
@@ -238,10 +239,33 @@ function Test-HostsBuilt([string]$main) {
     return $true   # не знаем - не тревожим
   }
 }
+# --- закрепления из custom-hosts.txt ---
+# Часть доменов стоит на конкретном адресе (opencode.ai, models.dev): прокси их не обслуживает,
+# а не все диапазоны Cloudflare доступны с домашнего провайдера. Такой пин стареет молча:
+# сменился адрес у Cloudflare - приложение просто не открывается, и никто об этом не узнает.
+# Проверяем каждый пин отдельным запросом, чтобы узнать в тот же час.
+function Test-Pins {
+  $bad = @()
+  $lines = @(& curl.exe -s -m 20 "https://raw.githubusercontent.com/$Repo/$Branch/custom-hosts.txt")
+  foreach ($l in $lines) {
+    if ($l -match '^\s*([A-Za-z0-9.-]+)\s+(\d{1,3}(?:\.\d{1,3}){3})\s*$') {
+      $dom = $Matches[1]; $ip = $Matches[2]
+      $code = ("" + (& curl.exe -s --connect-timeout 4 -m 8 -o NUL -w '%{http_code}' --resolve "${dom}:443:$ip" "https://$dom/" 2>$null)).Trim()
+      if ($code -notmatch '^(200|301|302|403)$') { $bad += "$dom ($ip, код $code)" }
+    }
+  }
+  return $bad
+}
 function Check-Built([string]$main) {
-  if (Test-HostsBuilt $main) { return }
-  Log "hosts-ai.txt в форке не содержит MAIN ${main}: сборка в Actions, похоже, упала"
-  Alert 'build-stale' 'GeoHide: hosts-ai.txt не обновился' "Адрес $main жив, но в hosts-ai.txt его нет. Открой Actions в ISa1m0n/GeoHideDNS: сборка, скорее всего, красная."
+  if (-not (Test-HostsBuilt $main)) {
+    Log "hosts-ai.txt в форке не содержит MAIN ${main}: сборка в Actions, похоже, упала"
+    Alert 'build-stale' 'GeoHide: hosts-ai.txt не обновился' "Адрес $main жив, но в hosts-ai.txt его нет. Открой Actions в ISa1m0n/GeoHideDNS: сборка, скорее всего, красная."
+  }
+  $pins = @(Test-Pins)
+  if ($pins.Count -gt 0) {
+    Log "Закреплённые домены не отвечают: $($pins -join ', ')"
+    Alert 'pin-dead' 'GeoHide: закреплённый адрес не работает' "Не открываются: $($pins -join ', '). Скорее всего, Cloudflare сменил адрес: проверь custom-hosts.txt."
+  }
 }
 
 # --- 1. MAIN / ALT ---

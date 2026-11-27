@@ -24,10 +24,16 @@ apis.google.com                           @GEMINI
 suggestqueries.google.com                 @GEMINI
 webchannel-alkalimakersuite-pa.clients6.google.com  @GEMINI
 
-# OpenCode и каталог моделей. 27.11.2026: прокси GeoHide (MAIN 109.120.187.249 из DoH) opencode.ai и models.dev не обслуживает
-# (tls=0), а models.dev в апстриме нет вовсе. Прямые адреса Cloudflare 104.18.10.66 и 104.18.11.66 с домашнего провайдера
-# отдают 200 для обоих доменов (системный DNS даёт 104.21.51.36 и 172.67.220.122, они режутся). Если адрес умрёт, взять новый:
-# curl --doh-url https://dns.geodema.love/dns-query -sv https://opencode.ai/ (строка Trying), проверить curl --resolve.
+# OpenCode и каталог моделей. 27.11.2026: прокси GeoHide эти домены не обслуживает ни на одном
+# адресе (31.25.239.132, 37.221.93.141, 109.120.187.249, 179.236.130.10 - везде TLS reset),
+# поэтому rewrite на MAIN и ломал OpenCode. Прямой Cloudflare отдаёт 200: 104.18.10.66 и
+# 104.18.11.66 работают, а 104.21.51.36 и 172.67.220.122 провайдер режет (таймаут на TLS).
+# Публичные резолверы (8.8.8.8, 1.1.1.1, 9.9.9.9) сейчас отдают 104.18.10.66, но NextDNS резолвит
+# со своей точки и может выдать заблокированную пару. Поэтому адрес закреплён здесь, а не отдан
+# на волю rewrite. Rewrite в NextDNS действует на поддомены, так что api.opencode.ai и
+# models.opencode.ai тоже идут сюда. Если пин умрёт, взять новый:
+# curl --doh-url https://dns.geodema.love/dns-query -sv https://opencode.ai/ (строка Trying),
+# затем проверить curl --resolve. Живость пина проверяет tools/geohide-probe.ps1.
 opencode.ai      104.18.10.66
 www.opencode.ai  104.18.10.66
 models.dev       104.18.10.66
