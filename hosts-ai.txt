@@ -278,8 +278,6 @@
 109.120.187.249 developer.nvidia.com
 109.120.187.249 ngc.nvidia.com
 # OpenCode AI
-109.120.187.249 opencode.ai
-109.120.187.249 www.opencode.ai
 # OpenRouter AI
 109.120.187.249 openrouter.ai
 109.120.187.249 www.openrouter.ai
@@ -324,3 +322,6 @@
 142.251.151.2 apis.google.com
 142.251.151.2 suggestqueries.google.com
 142.251.151.2 webchannel-alkalimakersuite-pa.clients6.google.com
+104.18.10.66 opencode.ai
+104.18.10.66 www.opencode.ai
+104.18.10.66 models.dev
