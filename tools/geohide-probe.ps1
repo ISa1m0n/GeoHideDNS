@@ -13,7 +13,10 @@
      и при их смерти запускает полную проверку. Полсотни TLS-запросов каждый час не нужны.
      Заодно сверяет, что в hosts-ai.txt форка есть текущий MAIN: если сборка в Actions
      упала, в трее появляется уведомление. Там же проверяются домены, закреплённые
-     в custom-hosts.txt (opencode.ai, models.dev): такой пин стареет молча.
+     в custom-hosts.txt (opencode.ai, models.dev, openrouter.ai). Мёртвый пин скрипт
+     лечит сам: берёт прямой адрес домена из ответов DoH, а если тот не отвечает
+     (у openrouter.ai Cloudflare режет российский IP) - живой прокси. Новый адрес
+     пишется в custom-hosts.txt, затем ждётся пересборка и вызывается DnsConf.
   3. Для Gemini ищет адрес без google.com/sorry: сначала среди DoH-ответов, потом среди
      проверенных адресов. Статус Gemini пишется комментарием в health.txt:
      clean / ai-only / dead.
@@ -240,21 +243,117 @@ function Test-HostsBuilt([string]$main) {
   }
 }
 # --- закрепления из custom-hosts.txt ---
-# Часть доменов стоит на конкретном адресе (opencode.ai, models.dev): прокси их не обслуживает,
-# а не все диапазоны Cloudflare доступны с домашнего провайдера. Такой пин стареет молча:
-# сменился адрес у Cloudflare - приложение просто не открывается, и никто об этом не узнает.
-# Проверяем каждый пин отдельным запросом, чтобы узнать в тот же час.
+# Часть доменов стоит на конкретном адресе (opencode.ai, models.dev, openrouter.ai): прокси
+# не все из них обслуживает, а не все диапазоны Cloudflare доступны с домашнего провайдера.
+# Такой пин стареет молча: сменился адрес у Cloudflare - приложение просто не открывается.
+# Проверяем каждый пин отдельным запросом и, если он мёртв, лечим (Repair-Pins ниже).
+#
+# 403 здесь считается отказом, а не ответом: openrouter.ai так отвечает на российский IP,
+# и если принять 403 за успех, лечение выберет адрес, который для пользователя не работает.
+function Test-PinHost([string]$domain, [string]$ip) {
+  $code = ("" + (& curl.exe -s --connect-timeout 4 -m 8 -o NUL -w '%{http_code}' --resolve "${domain}:443:$ip" "https://$domain/" 2>$null)).Trim()
+  return ($code -match '^(200|301|302)$')
+}
+
 function Test-Pins {
   $bad = @()
   $lines = @(& curl.exe -s -m 20 "https://raw.githubusercontent.com/$Repo/$Branch/custom-hosts.txt")
   foreach ($l in $lines) {
     if ($l -match '^\s*([A-Za-z0-9.-]+)\s+(\d{1,3}(?:\.\d{1,3}){3})\s*$') {
       $dom = $Matches[1]; $ip = $Matches[2]
-      $code = ("" + (& curl.exe -s --connect-timeout 4 -m 8 -o NUL -w '%{http_code}' --resolve "${dom}:443:$ip" "https://$dom/" 2>$null)).Trim()
-      if ($code -notmatch '^(200|301|302|403)$') { $bad += "$dom ($ip, код $code)" }
+      if (-not (Test-PinHost $dom $ip)) { $bad += "$dom ($ip)" }
     }
   }
   return $bad
+}
+
+# --- кандидаты для замены пина ---
+# Сначала прямые адреса домена из сторонних DoH: так чинится Cloudflare-пин у opencode.ai
+# и models.dev. Потом живые прокси: так чинится openrouter.ai, который напрямую отдаёт 403.
+function Get-PinCandidates([string]$domain, $pool) {
+  $list = New-Object System.Collections.Generic.List[string]
+  foreach ($ip in (Get-DohAddress $domain)) { if (-not $list.Contains($ip)) { $list.Add($ip) } }
+  foreach ($ip in $pool) { if ($ip -and -not $list.Contains($ip)) { $list.Add($ip) } }
+  return $list
+}
+
+# --- самолечение пинов: переписать мёртвый адрес в custom-hosts.txt ---
+# Возвращает список изменений, чтобы вызывающий код дождался пересборки и дёрнул DnsConf.
+function Repair-Pins($pool) {
+  $uri = "https://api.github.com/repos/$Repo/contents/custom-hosts.txt"
+  try {
+    $r = Invoke-RestMethod -Uri "${uri}?ref=$Branch" -Headers $Headers -ErrorAction Stop
+    $shaPin = $r.sha
+    $text = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($r.content -replace '\s', '')))
+  } catch {
+    Log "Не удалось прочитать custom-hosts.txt: $($_.Exception.Message)"
+    return @()
+  }
+  $lines = $text -split "`n"
+  $changes = @()
+  for ($i = 0; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -match '^(\s*)([A-Za-z0-9.-]+)(\s+)(\d{1,3}(?:\.\d{1,3}){3})(\s*)$') {
+      $indent = $Matches[1]; $dom = $Matches[2]; $sep = $Matches[3]; $old = $Matches[4]; $tail = $Matches[5]
+      if (Test-PinHost $dom $old) { continue }
+      Log "  Пин $dom на $old не отвечает"
+      $new = $null
+      foreach ($cand in (Get-PinCandidates $dom $pool)) {
+        if (Test-PinHost $dom $cand) { $new = $cand; break }
+      }
+      if (-not $new) { Log "  Замены для $dom не нашлось"; continue }
+      Log "  Пин ${dom}: $old -> $new"
+      $lines[$i] = "$indent$dom$sep$new$tail"
+      $changes += [pscustomobject]@{ Domain = $dom; Old = $old; New = $new }
+    }
+  }
+  if ($changes.Count -eq 0) { return @() }
+  $summary = ($changes | ForEach-Object { "$($_.Domain) $($_.Old)->$($_.New)" }) -join ', '
+  if ($DryRun) { Log "DryRun: пины не меняю ($summary)"; return $changes }
+  $payload = @{
+    message = "custom-hosts: самолечение пинов ($summary)"
+    content = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(($lines -join "`n")))
+    branch  = $Branch
+    sha     = $shaPin
+  }
+  try {
+    Invoke-RestMethod -Method Put -Uri $uri -Headers $Headers -Body ($payload | ConvertTo-Json) -ContentType 'application/json; charset=utf-8' -ErrorAction Stop | Out-Null
+    Log "custom-hosts.txt обновлён: $summary"
+  } catch {
+    Log "Не удалось записать custom-hosts.txt: $($_.Exception.Message)"
+    Alert 'pin-commit-fail' 'GeoHide: не удалось вылечить закрепление' "custom-hosts.txt не записался: $($_.Exception.Message)"
+    return @()
+  }
+  return $changes
+}
+
+# --- дождаться, пока сборка вставит новые адреса пинов в hosts-ai.txt ---
+function Wait-PinsBuilt($changes, [int]$minutes = 4) {
+  if ($DryRun -or $changes.Count -eq 0) { return $false }
+  $deadline = (Get-Date).AddMinutes($minutes)
+  while ((Get-Date) -lt $deadline) {
+    Start-Sleep -Seconds 10
+    try {
+      $h2 = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/contents/hosts-ai.txt?ref=$Branch" -Headers $Headers -ErrorAction Stop
+      $ht = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($h2.content -replace '\s', '')))
+      $ok = $true
+      foreach ($c in $changes) {
+        if ($ht -notmatch "(?m)^$([regex]::Escape($c.New))\s+$([regex]::Escape($c.Domain))\s*$") { $ok = $false }
+      }
+      if ($ok) { return $true }
+    } catch {}
+  }
+  return $false
+}
+
+function Send-Dispatch([string]$m, [string]$a, [string]$g, [string]$st) {
+  if ($DryRun) { return }
+  $d = @{ event_type = 'geohide-updated'; client_payload = @{ main = $m; alt = $a; gemini = $g; gemini_state = $st } }
+  try {
+    Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/$DispatchRepo/dispatches" -Headers $Headers -Body ($d | ConvertTo-Json -Depth 3) -ContentType 'application/json' -ErrorAction Stop | Out-Null
+    Log 'DnsConf запущен через repository_dispatch'
+  } catch {
+    Log "Не удалось запустить DnsConf: $($_.Exception.Message). Обновит крон."
+  }
 }
 function Check-Built([string]$main) {
   if (-not (Test-HostsBuilt $main)) {
@@ -264,7 +363,7 @@ function Check-Built([string]$main) {
   $pins = @(Test-Pins)
   if ($pins.Count -gt 0) {
     Log "Закреплённые домены не отвечают: $($pins -join ', ')"
-    Alert 'pin-dead' 'GeoHide: закреплённый адрес не работает' "Не открываются: $($pins -join ', '). Скорее всего, Cloudflare сменил адрес: проверь custom-hosts.txt."
+    Alert 'pin-dead' 'GeoHide: закреплённый адрес не работает' "Не открываются: $($pins -join ', '). Самолечение не помогло: ни прямой адрес домена, ни живой прокси не ответили. Проверь custom-hosts.txt."
   }
 }
 
@@ -283,6 +382,12 @@ if (($now - $lastFull) -lt $FullScanEvery) {
   if ($okMain -and $okAlt) {
     $left = [int](($FullScanEvery - ($now - $lastFull)) / 60)
     Log "Быстрая проверка: MAIN=$($cur.MAIN) жив, ALT=$($cur.ALT) жив. Полный перебор не раньше чем через $left мин"
+    $pinChanges = @(Repair-Pins -pool @($cur.MAIN, $cur.ALT))
+    if ($pinChanges.Count -gt 0) {
+      if (Wait-PinsBuilt $pinChanges) { Log 'hosts-ai.txt пересобран с новыми пинами' }
+      else { Log 'Пересборка пинов не успела за 4 минуты, запускаю DnsConf на том, что есть' }
+      Send-Dispatch $cur.MAIN $cur.ALT $cur.GEMINI ''
+    }
     Check-Built $cur.MAIN
     exit 0
   }
@@ -378,6 +483,11 @@ if ($covMain.Ok -lt [int][Math]::Ceiling($CoverDomains.Count * $CoverMin)) {
   Alert 'coverage' 'GeoHide: адрес проксирует не всё' "MAIN $main отдаёт $($covMain.Ok) из $($covMain.Total) проверенных доменов. Не работают: $($covMain.Bad -join ', '). Эти сервисы открываться не будут, пока не найдётся адрес получше."
 }
 
+# --- 1b. самолечение пинов ---
+# Делается до записи health.txt: тогда обе правки попадут в одну пересборку, а ожидание
+# нового MAIN ниже заодно подтвердит, что новые адреса пинов уже в hosts-ai.txt.
+$pinChanges = @(Repair-Pins -pool @($main, $alt))
+
 # --- 2. GEMINI ---
 $cand = New-Object System.Collections.Generic.List[string]
 if ($cur.GEMINI) { $cand.Add($cur.GEMINI) }
@@ -409,6 +519,11 @@ if (-not $gemini) { $gemini = $cur.GEMINI }   # нет лучшего - оста
 # --- 3. нужно ли обновлять health.txt ---
 if (-not $ForceCommit -and $main -eq $cur.MAIN -and $alt -eq $cur.ALT -and $gemini -eq $cur.GEMINI) {
   Log "Без изменений: MAIN=$main ALT=$alt GEMINI=$gemini ($geminiState)"
+  if ($pinChanges.Count -gt 0) {
+    if (Wait-PinsBuilt $pinChanges) { Log 'hosts-ai.txt пересобран с новыми пинами' }
+    else { Log 'Пересборка пинов не успела за 4 минуты, запускаю DnsConf на том, что есть' }
+    Send-Dispatch $main $alt $gemini $geminiState
+  }
   Check-Built $main
   exit 0
 }
@@ -469,13 +584,5 @@ if ($needMain -or $needAlt -or $needGem) {
 }
 
 # --- 5. запускаем DnsConf, чтобы NextDNS обновился без ожидания крона ---
-if (-not $DryRun) {
-  $d = @{ event_type = 'geohide-updated'; client_payload = @{ main = $main; alt = $alt; gemini = $gemini; gemini_state = $geminiState } }
-  try {
-    Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/$DispatchRepo/dispatches" -Headers $Headers -Body ($d | ConvertTo-Json -Depth 3) -ContentType 'application/json' -ErrorAction Stop | Out-Null
-    Log "DnsConf запущен через repository_dispatch"
-  } catch {
-    Log "Не удалось запустить DnsConf: $($_.Exception.Message). Обновит крон."
-  }
-}
+Send-Dispatch $main $alt $gemini $geminiState
 exit 0
