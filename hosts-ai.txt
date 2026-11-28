@@ -324,4 +324,4 @@
 104.18.10.66 opencode.ai
 104.18.10.66 www.opencode.ai
 104.18.10.66 models.dev
-109.120.187.249 openrouter.ai
+217.144.190.216 openrouter.ai
